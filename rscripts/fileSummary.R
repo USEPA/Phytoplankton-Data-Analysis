@@ -23,7 +23,7 @@ INFO$cleanFileName <- yy[,2]
 INFO$cleanFileName <- sub( pattern=" \\([234]\\)", replacement="", INFO$cleanFileName)
 INFO$cleanFileName <- sub( pattern="Copy of ", replacement="", INFO$cleanFileName)
 
-
+  
 ### combine cleanFileName and size to infer if a file is unique
 INFO$uniqueID <- as.numeric(as.factor( paste(INFO$cleanFileName, INFO$size)))
 
