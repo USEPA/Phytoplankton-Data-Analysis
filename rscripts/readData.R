@@ -2,10 +2,17 @@
 
 rm(list = ls())
 
+library(XLConnect)
+
+homeDir <- getwd()
+
 
 OUT <- read.table("output/reducedFileSurvey.csv", sep = ",", header = TRUE, as.is = TRUE)
 INFO <- read.table("output/reducedFileList.csv", sep = ",", header = TRUE, as.is = TRUE)
 OUT$read <- FALSE
+
+setwd("../algaeData/originalData/algae/EFR Phytoplankton Data/Drew data/")
+
 
 xx <- aggregate( size ~ sheetNames  , OUT , length)
 xx <- xx[sort(xx$size), ]
@@ -142,11 +149,40 @@ if(class(err) == "try-error") next
 
 temp <- readWorksheet(wb, shortList$sheet[i], startRow=8)
 temp <- temp[!is.na(temp$Division), ]
-
+if(nrow(temp)==0){
+  print("No bugs found?")
+  next}
 temp$samp_id       <- unlist(readWorksheet(wb, sheet=shortList$sheet[i], startRow = 3, endRow = 3, 
                                startCol = 1, endCol = 1, header = FALSE) )
 batch7 <- rbind(batch7, temp)
 
+}
+
+#### batch 8
+
+txt <- "Sample.Description; Lab; PREP; Method; UNITS; Result; LOD; Reporting.Limit; Qualifiers; Analyte; Sample"
+id <- grepl(txt, OUT$sheetNames)
+shortListA <- OUT[id, ]
+
+shortList <- subset(shortListA, ncol == 11)
+
+
+i <- 1
+err <-    try( wb     <- loadWorkbook(shortList$file[i]) )
+if(class(err) == "try-error") next  
+
+batch8 <- readWorksheet(wb, shortList$sheet[i])
+
+
+for(i in 2:nrow(shortList)){
+  err <-    try( wb     <- loadWorkbook(shortList$file[i]) )
+  if(class(err) == "try-error") next  
+  
+  temp <- readWorksheet(wb, shortList$sheet[i])
+
+  print(dim(temp))
+   batch8 <- rbind(batch8, temp)
+  
 }
 
 
