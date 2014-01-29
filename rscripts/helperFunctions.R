@@ -2,7 +2,7 @@
 
 readSelectSheets <- function(shortList){
  i <- 1
- err <-    try( wb     <- loadWorkbook(shortList$file[i]) )
+ err <-    try( wb     <- loadWorkbook(shortList$full_file_name[i]) )
  if(class(err) == "try-error") next  
   temp      <- readWorksheet(wb, sheet=shortList$sheet[i])
 
@@ -10,7 +10,7 @@ readSelectSheets <- function(shortList){
 for(i in 2:nrow(shortList) ){
   #for(i in 2:6 ){
   print(i)     
-  err <-    try( wb     <- loadWorkbook(shortList$file[i]) )
+  err <-    try( wb     <- loadWorkbook(shortList$full_file_name[i]) )
   if(class(err) == "try-error") next
   x      <- readWorksheet(wb, sheet=shortList$sheet[i])
   temp <- merge(temp, x, all = TRUE)

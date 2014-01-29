@@ -61,7 +61,8 @@ for(i in 1:nrow(INFO)){
      xx     <- names(x)
      nms <- paste0(xx,collapse= "; ")
      firstRow <- paste0(x[1,], collapse= "; ")
-     temp <- data.frame( file = INFO$file_name[i], size = INFO$size[i], sheet = sheets[j], ncol = size[2], nrow = size[1], sheetNames = nms , firstRow = firstRow)
+     temp <- data.frame( full_file_name = INFO$full_file_name[i], file = INFO$file_name[i], size = INFO$size[i], 
+                         sheet = sheets[j], ncol = size[2], nrow = size[1], sheetNames = nms , firstRow = firstRow)
      OUT <- rbind(OUT, temp)
      xlcFreeMemory()
      }

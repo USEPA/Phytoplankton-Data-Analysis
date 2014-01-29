@@ -7,8 +7,8 @@ source("rscripts/helperFunctions.R")
 homeDir <- getwd()
 
 
-OUT <- read.table("output/reducedFileSurvey.csv", sep = ",", header = TRUE, as.is = TRUE)
-INFO <- read.table("output/reducedFileList.csv", sep = ",", header = TRUE, as.is = TRUE)
+OUT   <- read.table("output/reducedFileSurvey.csv", sep = ",", header = TRUE, as.is = TRUE)
+INFO  <- read.table("output/reducedFileList.csv", sep = ",", header = TRUE, as.is = TRUE)
 
 OUT$batch <- NA  ## identify files which have been read.
 
@@ -18,27 +18,31 @@ setwd("originalData/algae/EFR Phytoplankton Data/")
 ## picking a list of a large number of similar structured sheets
 ### BATCH 1 ; may need to think of numbering system
 id <- grepl("^Sample.Description", OUT$sheetNames)
-shortList <- OUT[id, ]
-
-OUT$batch[id] <- "batch0"
 
 ### problem files; force skip
-problems <- c("q/EFR2011 Data Q&A.xlsx")
+problems <- c("EFR2011 Data Q&A.xlsx")
+id.Problem <- OUT$full_file_name == "Drew data/q/EFR2011 Data Q&A.xlsx"
 
-shortList <- subset(shortList, !shortList$file %in% problems)
+shortList <- OUT[id & ! id.Problem, ]
 
-## use first sheet as a template, skip files that won't open
+OUT$batch[id & ! id.Problem ] <- "batch0"
+OUT$batch[id.Problem ] <- "problem"
 
-temp <- readSelectSheets(shortList)
-### strip less than sign
+batch0 <- readSelectSheets(shortList)
+
+
+### Batch1
+if(FALSE){
 id <- grepl("^Location", OUT$sheetNames)
 shortList <- OUT[id, ]
-OUT$batch[id] <- TRUE
+
+OUT$batch[id] <- "batch1"
+
+temp <- readSelectSheets(shortList)
 
 ### the following deals with cleaning data.  Should likely be moved 
 id <- !is.na(temp$Result) & !is.na(temp$Result.1) & (temp$Result != temp$Result.1)
 sum(id) ## all values in which there are entries in both column, have the same entry in both columns
-
 id <- is.na(temp$Result) & !is.na(temp$Result.1)  ## there are no results only found in Result.1 column, therefore delete column
 
 ### identify columns with both < and > symbols
@@ -68,13 +72,13 @@ temp$Qualifiers[id] <- "<"
 id <-  grepl(pattern=">",x=temp$Result )
 temp$Qualifiers[id] <- ">"
 
-batch0 <- temp
-
-####  help pick large groups with common names
-id <- grepl("^Location", OUT$sheetNames)
-shortList <- OUT[id, ]
-unique(shortList$sheetNames)
-table(shortList$sheetNames)
+batch1 <- temp
+}
+# ####  help pick large groups with common names
+# id <- grepl("^Location", OUT$sheetNames)
+# shortList <- OUT[id, ]
+# unique(shortList$sheetNames)
+# table(shortList$sheetNames)
 
 
 ## BATCH 2
