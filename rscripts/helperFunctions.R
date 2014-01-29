@@ -1,5 +1,26 @@
 ### helper functions
 
+readSelectSheets <- function(shortList){
+ i <- 1
+ err <-    try( wb     <- loadWorkbook(shortList$file[i]) )
+ if(class(err) == "try-error") next  
+  temp      <- readWorksheet(wb, sheet=shortList$sheet[i])
+
+
+for(i in 2:nrow(shortList) ){
+  #for(i in 2:6 ){
+  print(i)     
+  err <-    try( wb     <- loadWorkbook(shortList$file[i]) )
+  if(class(err) == "try-error") next
+  x      <- readWorksheet(wb, sheet=shortList$sheet[i])
+  temp <- merge(temp, x, all = TRUE)
+  
+  xlcFreeMemory()
+}
+
+return(temp)
+}
+
 #####
 factor_2_character <- function(X){
      
