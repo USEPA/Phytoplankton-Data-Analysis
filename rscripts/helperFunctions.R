@@ -20,6 +20,7 @@ for(i in 2:nrow(shortList) ){
 
 return(temp)
 }
+  
 
 #####
 factor_2_character <- function(X){
