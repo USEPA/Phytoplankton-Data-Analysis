@@ -3,25 +3,24 @@
 rm(list = ls())
 
 library(XLConnect)
-
+source("rscripts/helperFunctions.R")
 homeDir <- getwd()
 
 
 OUT <- read.table("output/reducedFileSurvey.csv", sep = ",", header = TRUE, as.is = TRUE)
 INFO <- read.table("output/reducedFileList.csv", sep = ",", header = TRUE, as.is = TRUE)
-OUT$read <- FALSE
 
-setwd("../algaeData/originalData/algae/EFR Phytoplankton Data/Drew data/")
+OUT$batch <- NA  ## identify files which have been read.
+
+setwd("originalData/algae/EFR Phytoplankton Data/")
 
 
-xx <- aggregate( size ~ sheetNames  , OUT , length)
-xx <- xx[sort(xx$size), ]
-
-temp <- NULL
 ## picking a list of a large number of similar structured sheets
 ### BATCH 1 ; may need to think of numbering system
 id <- grepl("^Sample.Description", OUT$sheetNames)
 shortList <- OUT[id, ]
+
+OUT$batch[id] <- "batch0"
 
 ### problem files; force skip
 problems <- c("q/EFR2011 Data Q&A.xlsx")
@@ -34,7 +33,9 @@ temp <- readSelectSheets(shortList)
 ### strip less than sign
 id <- grepl("^Location", OUT$sheetNames)
 shortList <- OUT[id, ]
+OUT$batch[id] <- TRUE
 
+### the following deals with cleaning data.  Should likely be moved 
 id <- !is.na(temp$Result) & !is.na(temp$Result.1) & (temp$Result != temp$Result.1)
 sum(id) ## all values in which there are entries in both column, have the same entry in both columns
 
@@ -67,6 +68,8 @@ temp$Qualifiers[id] <- "<"
 id <-  grepl(pattern=">",x=temp$Result )
 temp$Qualifiers[id] <- ">"
 
+batch0 <- temp
+
 ####  help pick large groups with common names
 id <- grepl("^Location", OUT$sheetNames)
 shortList <- OUT[id, ]
@@ -76,11 +79,11 @@ table(shortList$sheetNames)
 
 ## BATCH 2
 ## use first sheet as a template, skip files that won't open
-setwd("originalData/algae/EFR Phytoplankton Data/Drew data/")
 
 txt <- "Location; Sample_Date; Sample_Time; Sample_Depth; LRL_Tag_Num; Analyte_Name; Analyte_Code; Result; Units; Qualifiers; Detect_Limit; Report_Limit; Lab_Id; Lab_Sample_Num; Prep_Method; Test_Method; DF; Analysis_Date; Imported"
 id <- grepl(txt, OUT$sheetNames)
 shortList <- OUT[id, ]
+OUT$batch[id] <- "batch2"
 
 batch2 <- readSelectSheets(shortList)
 dim(batch2)
@@ -90,6 +93,7 @@ txt <- "Location; Sample.Date; Sample.Time; Sample.Depth; Sample.ID; Sample.Type
 id <- grepl(txt, OUT$sheetNames)
 shortList <- OUT[id, ]
 dim(shortList)
+OUT$batch[id] <- "batch3"
 
 batch3 <- readSelectSheets(shortList)
 dim(batch3)
@@ -98,6 +102,7 @@ dim(batch3)
 txt <- "Location; Sample.Date; Sample.Time; Sample.Depth; Sample.ID; Sample.Type; Index.Name; Index.Score"
 id <- grepl(txt, OUT$sheetNames)
 shortList <- OUT[id, ]
+OUT$batch[id] <- "batch4"
 
 batch4 <- readSelectSheets(shortList)
 ###
@@ -105,12 +110,14 @@ batch4 <- readSelectSheets(shortList)
 txt <- "Sample.Date; Sample.Time; Sample.Depth; Sample.ID; Sample.Type; Date.Analyzed; Analytical.Method; Lab; Data.Confidence; Taxonomist; Division; Taxa; Reference; Cells.liter; Relative.....abundance; Mean.Biovolume..µm3.; Total.biovolume..µm3.L.; Relative.....biovolume"
 id <- grepl(txt, OUT$sheetNames)
 shortList <- OUT[id, ]
+OUT$batch[id] <- "batch4"
 
 batch5 <- readSelectSheets(shortList)
 
 #### multiple sheets; same file
 txt <- "d/EFR phyto 8-23-2011"
 id <- grepl(txt, OUT$file)
+OUT$batch[id] <- "batch6"
 
 shortList <- OUT[id, ]
 
@@ -136,10 +143,11 @@ batch6 <- rbind( batch6, temp)
 
 }
 
-#####
+#####  batch7 
 
 txt <- "Cyanobacterial.Analysis.Report; Sample.ID.; Col3"
 id <- grepl(txt, OUT$sheetNames)
+OUT$batch[id] <- "batch7"
 
 shortList <- OUT[id, ]
 batch7 <- NULL
@@ -156,13 +164,13 @@ temp$samp_id       <- unlist(readWorksheet(wb, sheet=shortList$sheet[i], startRo
                                startCol = 1, endCol = 1, header = FALSE) )
 batch7 <- rbind(batch7, temp)
 
-}
-
 #### batch 8
 
 txt <- "Sample.Description; Lab; PREP; Method; UNITS; Result; LOD; Reporting.Limit; Qualifiers; Analyte; Sample"
 id <- grepl(txt, OUT$sheetNames)
 shortListA <- OUT[id, ]
+OUT$batch[id] <- "batch8"
+
 
 shortList <- subset(shortListA, ncol == 11)
 
