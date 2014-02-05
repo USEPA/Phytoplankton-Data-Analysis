@@ -13,8 +13,10 @@ for(i in 2:nrow(shortList) ){
   err <-    try( wb     <- loadWorkbook(shortList$full_file_name[i]) )
   if(class(err) == "try-error") next
   x      <- readWorksheet(wb, sheet=shortList$sheet[i])
+  x$file_id <- shortList$file_id[i]
   temp <- merge(temp, x, all = TRUE)
-  
+  #temp <- rbind(temp, x)
+  print(dim(temp) )
   xlcFreeMemory()
 }
 
