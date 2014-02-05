@@ -114,7 +114,7 @@ batch4 <- readSelectSheets(shortList)
 txt <- "Sample.Date; Sample.Time; Sample.Depth; Sample.ID; Sample.Type; Date.Analyzed; Analytical.Method; Lab; Data.Confidence; Taxonomist; Division; Taxa; Reference; Cells.liter; Relative.....abundance; Mean.Biovolume..µm3.; Total.biovolume..µm3.L.; Relative.....biovolume"
 id <- grepl(txt, OUT$sheetNames)
 shortList <- OUT[id, ]
-OUT$batch[id] <- "batch4"
+OUT$batch[id] <- "batch5"
 
 batch5 <- readSelectSheets(shortList)
 
