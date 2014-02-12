@@ -9,8 +9,7 @@ homeDir <- getwd()
 
 OUT   <- read.table("output/reducedFileSurvey.csv", sep = ",", header = TRUE, as.is = TRUE)
 INFO  <- read.table("output/reducedFileList.csv", sep = ",", header = TRUE, as.is = TRUE)
-OUT$file_id <- 1:nrow(OUT)
-write.table(OUT, "output/reducedFileSurvey_withID.csv", sep = ",")
+
 
 OUT$batch <- NA  ## identify files which have been read.
 
@@ -31,6 +30,7 @@ OUT$batch[id & ! id.Problem ] <- "batch0"
 OUT$batch[id.Problem ] <- "problem"
 
 batch0 <- readSelectSheets(shortList)
+
 write.table(batch0, "../../../output/step1/batch0.csv", sep = ",",row.names=FALSE)
 
 ### Batch1
@@ -139,11 +139,13 @@ for(i in 2:nrow(shortList) ){
   if(class(err) == "try-error") next
   x      <- readWorksheet(wb, sheet=shortList$sheet[i])
   x$Date.Analyzed <- as.character(x$Date.Analyzed)
+  x$sheet_id <- shortList$sheet_id[i]
   # temp <- merge(temp, x, all = TRUE)
   temp <- rbind(temp, x)
   print(dim(temp) )
   xlcFreeMemory()
 }
+
 batch5 <- temp
 
 write.table(batch5, "../../../output/step1/batch5.csv", sep = ",",row.names=FALSE)
@@ -164,14 +166,14 @@ if(class(err) == "try-error") print( "File Missing")
 sheets <- getSheets(wb)
 batch6 <- NULL
 
-
 for(i in 1:20){
-temp <- readWorksheet(wb, sheet=sheets[i], startRow=9)
+
+  temp <- readWorksheet(wb, sheet=sheets[i], startRow=9)
 temp <- temp[!is.na(temp$Division), ]
 
 temp$sample_id <- unlist(readWorksheet(wb, sheet=sheets[i], 
               startCol=2,endCol=2,startRow=5, endRow=5, header = FALSE) )
-
+temp$sheet_id <- shortList$sheet_id[i]
 ### When column names don't match after i = 10, force them to match
 if(i > 1){
   if( sum(names(temp) %in% names(batch6))!=9 ) { names(temp) <- names(batch6) }
@@ -190,6 +192,7 @@ id <- grepl(txt, OUT$sheetNames)
 OUT$batch[id] <- "batch7"
 
 shortList <- OUT[id, ]
+
 batch7 <- NULL
 for(i in 1:nrow(shortList)){
 err <-    try( wb     <- loadWorkbook(shortList$full_file_name[i]) )
@@ -202,6 +205,7 @@ if(nrow(temp)==0){
   next}
 temp$samp_id       <- unlist(readWorksheet(wb, sheet=shortList$sheet[i], startRow = 3, endRow = 3, 
                                startCol = 1, endCol = 1, header = FALSE) )
+temp$sheet_id <- shortList$sheet_id[i]
 batch7 <- rbind(batch7, temp)
 }
 
@@ -233,13 +237,14 @@ err <-    try( wb     <- loadWorkbook(shortList$full_file_name[i]) )
 if(class(err) == "try-error") next  
 
 batch8 <- readWorksheet(wb, shortList$sheet[i])
-
+batch8$sheet_id <- shortList$sheet_id[i]
 
 for(i in 2:nrow(shortList)){
   err <-    try( wb     <- loadWorkbook(shortList$full_file_name[i]) )
   if(class(err) == "try-error") next  
   
   temp <- readWorksheet(wb, shortList$sheet[i])
+  temp$sheet_id <- shortList$sheet_id[i]
   xlcFreeMemory()
   print(dim(temp))
    batch8 <- rbind(batch8, temp)
@@ -255,13 +260,14 @@ err <-    try( wb     <- loadWorkbook(shortList$full_file_name[i]) )
 if(class(err) == "try-error") next  
 
 batch8 <- readWorksheet(wb, shortList$sheet[i])
-
+batch8$sheet_id <- shortList$sheet_id[i]
 
 for(i in 2:nrow(shortList)){
   err <-    try( wb     <- loadWorkbook(shortList$full_file_name[i]) )
   if(class(err) == "try-error") next  
   
   temp <- readWorksheet(wb, shortList$sheet[i])
+  temp$sheet_id <- shortList$sheet_id[i]
   xlcFreeMemory()
   print(dim(temp))
   batch8 <- rbind(batch8, temp)
@@ -277,7 +283,7 @@ err <-    try( wb     <- loadWorkbook(shortList$full_file_name[i]) )
 if(class(err) == "try-error") next  
 
 batch8_ncol15 <- readWorksheet(wb, shortList$sheet[i])
-
+batch8_ncol15$sheet_id <- shortList$sheet_id[i]
 
 
 
