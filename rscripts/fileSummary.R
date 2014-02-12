@@ -6,20 +6,21 @@ rm(list = ls() )
 ### expand memory
 options(java.parameters = "-Xmx8g" )
 source("rscripts/helperFunctions.R")
-
-homeDir <- getwd()
+### mjp home Directory
+homeDir <- "/Users/mattpocernich/repos/epa_2013/2013/TO 0016/analysis/Phytoplankton-Data-Analysis"
+#  homeDir <- getwd()
 
 setwd("originalData/algae/EFR Phytoplankton Data/")
 
 files  <- dir( recursive=TRUE,include.dirs=TRUE)
-files  <- files[grepl("xls",x=files)]  ## full path
+files  <- files[grepl("xls",x=files,ignore.case=TRUE)]  ## full path
 file_name <- NULL
 
 xx <- strsplit(files, "/")
 yy <- do.call("rbind", xx)
 
 for(i in 1:nrow(yy)){
-  ii <- min( grep("xls",  yy[i,]  ) )  ## odd way to separate the filename from path with different dephs
+  ii <- min( grep("xls",  yy[i,],ignore.case=TRUE  ) )  ## odd way to separate the filename from path with different dephs
   file_name[i] <- yy[i,ii]
   
 }
@@ -42,6 +43,7 @@ INFO$uniqueID <- as.numeric(as.factor( paste(INFO$cleanFileName, INFO$size)))
 INFOorig <- INFO <- INFO[order(INFO$cleanFileName), ]
 
 id <- match( unique(INFO$uniqueID), INFO$uniqueID )  ## selects only one unique cleanFileName
+
 INFO <- INFO[id, ]
 
 INFO <- factor_2_character(INFO)
@@ -70,5 +72,10 @@ for(i in 1:nrow(INFO)){
 }
 setwd(homeDir)
 
+OUT$sheet_id   <- 1:nrow(OUT)
+INFO$file_id <- 1:nrow(INFO)
+INFOorig$file_origID <- 1:nrow(INFOorig)
+
  write.table(OUT, "output/reducedFileSurvey.csv", sep = ",", row.names=FALSE)
  write.table(INFO, "output/reducedFileList.csv", sep = ",", row.names=FALSE)
+ write.table(INFOorig, "output/fullFileList.csv", sep = ",", row.names=FALSE)
