@@ -48,7 +48,7 @@ df$qual1[i] <- ">"
 df$result_num <-  gsub("[[:alpha:]]", replacement='', x )    
 df$result_num <-  gsub("[<>]", replacement='', df$result_num ) 
 df$result_num <-as.numeric(df$result_num)
-### split dual censor on teh <    
+### split dual censor on the <    
   temp1     <- strsplit( x, "<")
   temp2     <- ldply(temp1, rbind)
   temp2[,1] <-   gsub("[>,]", replacement='', temp2[,1]) 
@@ -61,7 +61,7 @@ df$result_num <-as.numeric(df$result_num)
   return(df)  
 }
 
-test <- result_convert(WQ_all$result)
+#test <- result_convert(WQ_all$result)
 
   split_sampleID <- function(x){
   ## x is the column with a sample id.  This is expected to be 24 characters long.
