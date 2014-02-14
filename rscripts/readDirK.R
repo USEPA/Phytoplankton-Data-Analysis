@@ -42,10 +42,7 @@ algae <- data.frame(ID = WQ1$ID,
                    BV.um3.L = WQ1$Biovolume,  ## how can I be certain about these units?
                    class = NA,
                    hab = FALSE,
-                   sheet_id = WQ1$sheet_id)
-
-write.table(algae, "../../../processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
-
+                   sheet_id = WQ1$sheet_id
 
 ####
 
@@ -133,5 +130,8 @@ wq_dat <- data.frame(location = xx$Station,
   )
 wq_dat <- factor_2_character(wq_dat )
 
-write.table(wq_dat, "../../../processed_data/water_quality.csv", sep = ",", row.names=FALSE, col.names=FALSE, append = TRUE)                    
+if(WRITE){
+write.table(algae, "../../../processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
 
+write.table(wq_dat, "../../../processed_data/water_quality.csv", sep = ",", row.names=FALSE, col.names=FALSE, append = TRUE)                    
+}

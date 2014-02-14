@@ -54,6 +54,8 @@ WQ_all <- cbind(WQ_all, result_convert(WQ_all$result))
 
 WQ_all <- subset(WQ_all, !is.na(result))
 WQ_all$ID <- paste(WQ_all$location, WQ_all$sample_date, WQ_all$sample_time, WQ_all$sample_depth, sep = "")
+### table WB
+
 
 #### look at HAB files
 
@@ -104,6 +106,9 @@ BBB$ID <- paste("2",## assuming 2
                 formatC(BBB$Depth, width=3, flag = "0"), sep = "")      
 
 ##
+
+
+
 
 algae <- data.frame(ID = BBB$ID,
                     lake = BBB$Lake,
