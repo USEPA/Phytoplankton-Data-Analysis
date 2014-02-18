@@ -35,7 +35,6 @@ INFO$cleanFileName <- INFO$file_name
 INFO$cleanFileName <- sub( pattern=" \\([234]\\)", replacement="", INFO$cleanFileName)
 INFO$cleanFileName <- sub( pattern="Copy of ", replacement="", INFO$cleanFileName)
 
-
 ### combine cleanFileName and size to infer if a file is unique
 
 INFO$uniqueID <- as.numeric(as.factor( paste(INFO$cleanFileName, INFO$size)))
@@ -70,12 +69,17 @@ for(i in 1:nrow(INFO)){
      }
      
 }
+
 setwd(homeDir)
 
 OUT$sheet_id   <- 1:nrow(OUT)
-INFO$file_id <- 1:nrow(INFO)
+OUT$processed <- FALSE
+INFO$file_id   <- 1:nrow(INFO)
+INFO$drop    <- NA
+INFO$comment <- NA ## Fields to denote file to skip and reasons to skip them.
+
 INFOorig$file_origID <- 1:nrow(INFOorig)
 
- write.table(OUT, "output/reducedFileSurvey.csv", sep = ",", row.names=FALSE)
- write.table(INFO, "output/reducedFileList.csv", sep = ",", row.names=FALSE)
- write.table(INFOorig, "output/fullFileList.csv", sep = ",", row.names=FALSE)
+write.table( OUT, "output/reducedFileSurvey.0214.csv", sep = ",", row.names=FALSE)
+write.table( INFO, "output/reducedFileList.0214.csv", sep = ",", row.names=FALSE)
+write.table( INFOorig, "output/fullFileList.0214.csv", sep = ",", row.names=FALSE)

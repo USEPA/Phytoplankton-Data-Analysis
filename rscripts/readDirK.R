@@ -1,3 +1,5 @@
+library(reshape2)
+
 setwd("originalData/algae/EFR Phytoplankton Data/")
 
 OUT <- factor_2_character(OUT)
@@ -6,6 +8,7 @@ id <- grepl(pattern="/k/", OUT$full_file_name)
 OUTsub <- OUT[id, ]
 
 OUTsub2 <- subset(OUTsub, file == "92RAWDAT.xls")
+OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
 
 err <-    try( wb     <- loadWorkbook(OUTsub2$full_file_name[1]) )
 if(class(err) == "try-error"){ print("Error")}
@@ -42,14 +45,13 @@ algae <- data.frame(ID = WQ1$ID,
                    BV.um3.L = WQ1$Biovolume,  ## how can I be certain about these units?
                    class = NA,
                    hab = FALSE,
-                   sheet_id = WQ1$sheet_id
+                   sheet_id = WQ1$sheet_id)
 
 ####
 
-EFR - Phytoplankton Results (2).xls
-
 OUTsub2 <- OUTsub[grepl("EFR - Phytoplankton Results", OUTsub$file) ,  ]
-
+OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
+ i <- 1                   
   err <-    try( wb     <- loadWorkbook(OUTsub2$full_file_name[i]) )
   if(class(err) == "try-error") print( "File Missing")   
   temp <- readWorksheet(wb, sheet=OUTsub2$sheet[i])
@@ -58,7 +60,7 @@ OUTsub2 <- OUTsub[grepl("EFR - Phytoplankton Results", OUTsub$file) ,  ]
 
 ##
 
-algae <- data.frame(ID = BBB$Sample.ID,
+algae1 <- data.frame(ID = BBB$Sample.ID,
                     lake = substr(BBB$Sample.ID, 2,4),
                     station = substr(BBB$Sample.ID, 5,9),
                     depth_ft = 999,
@@ -70,11 +72,11 @@ algae <- data.frame(ID = BBB$Sample.ID,
                     hab = FALSE,
                     sheet_id = BBB$sheet_id)
 
-write.table(algae, "../../../processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
 
 ####
 
 OUTsub2 <- OUTsub[grepl("RUN", OUTsub$file,ignore.case=TRUE ) ,  ]
+OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
 
 #### note some files are duplicates, I believe because of incorrectly copied dates.
 iDrop <- c("EFR-2001-Run1.xls" , "EFR-2001-Run3.xls" )
@@ -95,8 +97,9 @@ for(i in 1:nrow(OUTsub2)){
 }
 
 ### get headers 
-wq_hdr <- read.table( "../../../processed_data/water_quality.csv", sep = ",", header = TRUE )       
-library(reshape2)
+
+### wq_hdr <- read.table( "../../../processed_data/water_quality.csv", sep = ",", header = TRUE )       
+
 
 xx <- melt( AAA, id.vars = c("Station", "Date", "Time", "Depth" , "sheet_id" ), variable.name="analyte", value.name="result")
 xx <- cbind(xx, result_convert(xx$result) )
@@ -130,8 +133,11 @@ wq_dat <- data.frame(location = xx$Station,
   )
 wq_dat <- factor_2_character(wq_dat )
 
-if(WRITE){
-write.table(algae, "../../../processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
+setwd(homeDir)
 
-write.table(wq_dat, "../../../processed_data/water_quality.csv", sep = ",", row.names=FALSE, col.names=FALSE, append = TRUE)                    
+if(WRITE){
+write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
+write.table(algae1, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
+
+write.table(wq_dat, "processed_data/water_quality.csv", sep = ",", row.names=FALSE, col.names=FALSE, append = TRUE)                    
 }

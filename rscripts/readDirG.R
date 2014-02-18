@@ -4,15 +4,15 @@
 setwd("originalData/algae/EFR Phytoplankton Data/")
 
 OUT <- factor_2_character(OUT)
+id  <- grepl(pattern="/g/", OUT$full_file_name)
 
-id <- grepl(pattern="/g/", OUT$full_file_name)
 OUTsub <- OUT[id, ]
-
 OUTsub2 <- subset(OUTsub, file == "CELRL CT Water Quality Chemical Data 2012.xls")
+OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
 
 err <-    try( wb     <- loadWorkbook(OUTsub2$full_file_name[1]) )
 if(class(err) == "try-error"){ print("Error")}
-
+ 
 sheets <- getSheets(wb)
 WQ1 <- NULL
 for( i in 1:4){
@@ -30,6 +30,7 @@ for( i in 1:4){
 ### 
 
 OUTsub2 <- subset(OUTsub, file == "CELRL RTI WQ Chemical Data 2012.xls")
+OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
 
 err <-    try( wb     <- loadWorkbook(OUTsub2$full_file_name[1]) )
 if(class(err) == "try-error"){ print("Error")}
@@ -60,6 +61,7 @@ WQ_all$ID <- paste(WQ_all$location, WQ_all$sample_date, WQ_all$sample_time, WQ_a
 #### look at HAB files
 
 OUTsub2 <- OUTsub[grepl("HAB", OUTsub$file) & grepl("Cyanobacterial.Analysis.Report", OUTsub$sheetNames),  ]
+OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
 
 
 AAA <- NULL
@@ -81,9 +83,26 @@ for(i in 1:nrow(OUTsub2)){
   AAA <- rbind( AAA, temp)
 }
 
+
+AAA$hab <- TRUE
+
+
+algae0 <- data.frame(ID = AAA$sample_id,
+                     lake = substr(AAA$sample_id, 2,4),
+                     station = substr(AAA$sample_id, 5, 9),
+                     depth_ft = substr(AAA$sample_id, 22, 24),
+                     date = substr(AAA$sample_id, start=10, stop=17),
+                     taxa = AAA$Genus,
+                     cell_per_l = AAA$Concentration..cells.mL.,
+                     BV.um3.L = NA,  ## how can I be certain about these units?
+                     class = NA,
+                     hab = TRUE,
+                     sheet_id = AAA$sheet_id)
+
 ##
 
 OUTsub2 <- OUTsub[grepl("^efr", OUTsub$file) & grepl("^Lake", OUTsub$sheetNames),  ]
+OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
 
 
 BBB <- NULL
@@ -110,7 +129,7 @@ BBB$ID <- paste("2",## assuming 2
 
 
 
-algae <- data.frame(ID = BBB$ID,
+algae1 <- data.frame(ID = BBB$ID,
                     lake = BBB$Lake,
                     station = BBB$Station,
                     depth_ft = BBB$Depth,
@@ -121,6 +140,11 @@ algae <- data.frame(ID = BBB$ID,
                     class = NA,
                     hab = FALSE,
                     sheet_id = BBB$sheet_id)
-write.table(algae, "../../../processed_data/algae.csv", row.names=FALSE, sep = ",")                    
-write.table(WQ_all, "../../../processed_data/water_quality.csv", sep = ",", row.names=FALSE)                    
-  
+
+algae <- rbind(algae1, algae0)
+
+setwd(homeDir)
+if(WRITE){
+write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",")                    
+write.table(WQ_all, "processed_data/water_quality.csv", sep = ",", row.names=FALSE)                    
+}  

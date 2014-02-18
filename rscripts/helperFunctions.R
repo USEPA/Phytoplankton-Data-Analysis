@@ -49,15 +49,18 @@ df$result_num <-  gsub("[[:alpha:]]", replacement='', x )
 df$result_num <-  gsub("[<>]", replacement='', df$result_num ) 
 df$result_num <-as.numeric(df$result_num)
 ### split dual censor on the <    
+  
   temp1     <- strsplit( x, "<")
   temp2     <- ldply(temp1, rbind)
+  
+  if(ncol(temp2) ==2 ){  ## if temp2 has two columns, it means that it split as expected.
   temp2[,1] <-   gsub("[>,]", replacement='', temp2[,1]) 
   temp2[,1] <- as.numeric(temp2[,1])
   temp2[,2] <- as.numeric(temp2[,2])
 
   df$result_num[i] <- temp2[i,1]
   df$result_num2[i] <- temp2[i,2]
-  
+  }
   return(df)  
 }
 

@@ -1,16 +1,19 @@
 library(XLConnect)
+## to keep the out processed filed 
+# OUT   <- read.table("output/reducedFileSurvey.csv", sep = ",", header = TRUE, as.is = TRUE)
 
-OUT   <- read.table("output/reducedFileSurvey.csv", sep = ",", header = TRUE, as.is = TRUE)
-INFO  <- read.table("output/reducedFileList.csv", sep = ",", header = TRUE, as.is = TRUE)
+# INFO  <- read.table("output/reducedFileList.csv", sep = ",", header = TRUE, as.is = TRUE)
 
 setwd("originalData/algae/EFR Phytoplankton Data/")
 
 id <- grepl(pattern="/q/", OUT$full_file_name)
-OUTsub <- OUT[id, ]
+
+OUTsub <- OUT[id & OUT$processed == FALSE, ]
 
 OUTsub2 <- subset(OUTsub, file == "EFR2011 CT Data organized.xlsx")  ## one file
-OUTsub2 <- subset(OUTsub2, ! sheet %in% c( "ALL", "Sheet1", "Sheet2") )
+OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
 
+OUTsub2 <- subset(OUTsub2, ! sheet %in% c( "ALL", "Sheet1", "Sheet2") )
 
 err <-    try( wb     <- loadWorkbook(OUTsub2$full_file_name[1]) )
 if(class(err) == "try-error"){ print("Error")}
@@ -41,26 +44,24 @@ compColumns(AAA$Analyte, AAA$Analyte.1)
 
 
 AAA <- AAA[, !names(AAA) %in% c("Result.1", "Analyte.1")]
-
-
 AAA <- cbind(AAA,result_convert(AAA$Result))
 
 ### correct long sample id
 
 id <- nchar(AAA$Sample.Description) != 24
-temp <- gsub("-BETHEL", replacement="XXXXX", AAA$Sample.Description[id]) ## replace with station info
+temp <- gsub("-BETHEL", replacement="21001", AAA$Sample.Description[id]) ## replace with station info
 temp <- paste(temp, "9999", sep = "")  ## missing time
 temp <- paste(temp, "999", sep = "") ## missing depth
 AAA$Sample.Description[id] <- temp
 
-wq_dat <- data.frame(location = substr(AAA$Sample.Description, , ),
-                     sample_date  = xx$Date ,
-                     sample_time  = xx$Time,
-                     sample_depth = xx$Depth ,
+wq_dat <- data.frame(location = substr(AAA$Sample.Description, 5,9),
+                     sample_date  = substr(AAA$Sample.Description, 10,17) ,
+                     sample_time  = substr(AAA$Sample.Description, 18,21) ,
+                     sample_depth = substr(AAA$Sample.Description, 22,24) ,
                      lrl_tag_num  = NA,     
-                     analyte  = xx$analyte ,
+                     analyte  = AAA$Analyte ,
                      analyte_code = NA,
-                     result = xx$result,
+                     result = AAA$original,
                      units  = NA,
                      qualifiers = NA , 
                      detect_limit  = NA , 
@@ -72,14 +73,15 @@ wq_dat <- data.frame(location = substr(AAA$Sample.Description, , ),
                      lab_sample_number = NA,
                      analysis_date = NA,     
                      imported  = NA,         
-                     sheet_id  = xx$sheet_id,         
-                     original = xx$original,        
-                     qual1  = xx$qual1,           
-                     result_num = xx$result_num,       
-                     ID = paste(xx$Station, xx$Date, xx$Time, 
-                                formatC(as.numeric(xx$Depth), flag = "0", width = 3)
+                     sheet_id  = AAA$sheet_id,         
+                     original = AAA$original,        
+                     qual1  = AAA$qual1,           
+                     result_num = AAA$result_num,       
+                     ID = AAA$Sample.Description
                      )              
-)
-wq_dat <- factor_2_character(wq_dat )
 
-write.table(wq_dat, "../../../processed_data/water_quality.csv", sep = ",", row.names=FALSE, col.names=FALSE, append = TRUE)         
+wq_dat <- factor_2_character(wq_dat )
+setwd(homeDir)
+if(WRITE){
+write.table(wq_dat, "processed_data/water_quality.csv", sep = ",", row.names=FALSE, col.names=FALSE, append = TRUE)         
+}
