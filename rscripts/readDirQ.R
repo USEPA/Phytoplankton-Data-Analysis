@@ -54,6 +54,8 @@ temp <- paste(temp, "9999", sep = "")  ## missing time
 temp <- paste(temp, "999", sep = "") ## missing depth
 AAA$Sample.Description[id] <- temp
 
+
+
 wq_dat <- data.frame(location = substr(AAA$Sample.Description, 5,9),
                      sample_date  = substr(AAA$Sample.Description, 10,17) ,
                      sample_time  = substr(AAA$Sample.Description, 18,21) ,
@@ -75,13 +77,19 @@ wq_dat <- data.frame(location = substr(AAA$Sample.Description, 5,9),
                      imported  = NA,         
                      sheet_id  = AAA$sheet_id,         
                      original = AAA$original,        
-                     qual1  = AAA$qual1,           
+                     qual1  = AAA$qual1,   
+                     qual2  = AAA$qual2,   
+                     result_num2 = AAA$result_num2,
                      result_num = AAA$result_num,       
                      ID = AAA$Sample.Description
                      )              
 
+
 wq_dat <- factor_2_character(wq_dat )
+wq_datQ <- wq_dat
 setwd(homeDir)
 if(WRITE){
+  print(dim(wq_dat))
+  print(head(wq_dat))  
 write.table(wq_dat, "processed_data/water_quality.csv", sep = ",", row.names=FALSE, col.names=FALSE, append = TRUE)         
 }

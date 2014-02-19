@@ -46,8 +46,8 @@ algae <- data.frame(ID = ID,
                     class = NA,
                     hab = FALSE,
                     sheet_id = AAA$sheet_id)
-
+setwd(homeDir)
 if(WRITE){
-  write.table(algae, "../../../processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
+  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
  
 }

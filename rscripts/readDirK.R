@@ -138,6 +138,7 @@ setwd(homeDir)
 if(WRITE){
 write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
 write.table(algae1, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
-
+print(dim(wq_dat))
+print(head(wq_dat))
 write.table(wq_dat, "processed_data/water_quality.csv", sep = ",", row.names=FALSE, col.names=FALSE, append = TRUE)                    
 }

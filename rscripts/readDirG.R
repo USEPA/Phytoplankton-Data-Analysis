@@ -145,6 +145,9 @@ algae <- rbind(algae1, algae0)
 
 setwd(homeDir)
 if(WRITE){
-write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",")                    
+write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",")      
+print(dim(WQ_all))
+print(head(WQ_all))
+
 write.table(WQ_all, "processed_data/water_quality.csv", sep = ",", row.names=FALSE)                    
 }  
