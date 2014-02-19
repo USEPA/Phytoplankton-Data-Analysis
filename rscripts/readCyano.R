@@ -19,7 +19,7 @@ for(i in 1:nrow(OUTsub2)){
 #for(i in 1:10){  
   err <-    try( wb     <- loadWorkbook(OUTsub2$full_file_name[i]) )
   if(class(err) == "try-error") print( "File Missing") 
-  print(i)
+#  print(i)
   temp <- readWorksheet(wb, sheet=OUTsub2$sheet[i], startRow=8)
   temp <- temp[!is.na(temp$Division), ]
   if(nrow(temp)==0){ 

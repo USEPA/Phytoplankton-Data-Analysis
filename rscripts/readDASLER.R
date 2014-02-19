@@ -19,7 +19,7 @@ for( i in 2:nrow(OUTsub2)){
   if(class(err) == "try-error"){ print("Error")}  
   temp <- readWorksheet(wb, sheet=OUTsub2$sheet[i], header=TRUE)
   temp$iCheck <- i
-  print(dim(temp))
+  #print(dim(temp))
   temp <- temp[, names(temp) != "Analyte.1"]
 #  print(tail(temp))
   dimCheck <- dimCheck + nrow(temp)

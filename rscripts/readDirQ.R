@@ -90,6 +90,6 @@ wq_datQ <- wq_dat
 setwd(homeDir)
 if(WRITE){
   print(dim(wq_dat))
-  print(head(wq_dat))  
+  #print(head(wq_dat))  
 write.table(wq_dat, "processed_data/water_quality.csv", sep = ",", row.names=FALSE, col.names=FALSE, append = TRUE)         
 }

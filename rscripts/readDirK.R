@@ -125,13 +125,16 @@ wq_dat <- data.frame(location = xx$Station,
                      imported  = NA,         
                      sheet_id  = xx$sheet_id,         
                      original = xx$original,        
-                     qual1  = xx$qual1,           
+                     qual1  = xx$qual1,
+                     qual2 = xx$qual2,
+                     result_num2 = xx$result_num2,
                      result_num = xx$result_num,       
                      ID = paste(xx$Station, xx$Date, xx$Time, 
-                                formatC(as.numeric(xx$Depth), flag = "0", width = 3)
+                                formatC(as.numeric(xx$Depth), flag = "0", width = 3), 
+                                sep = ""
                                 )              
   )
-wq_dat <- factor_2_character(wq_dat )
+wq_dat <- wq_datK <- factor_2_character(wq_dat )
 
 setwd(homeDir)
 
@@ -139,6 +142,6 @@ if(WRITE){
 write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
 write.table(algae1, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
 print(dim(wq_dat))
-print(head(wq_dat))
+#print(head(wq_dat))
 write.table(wq_dat, "processed_data/water_quality.csv", sep = ",", row.names=FALSE, col.names=FALSE, append = TRUE)                    
 }

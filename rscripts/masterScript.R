@@ -22,3 +22,5 @@ print(sum(OUT$processed))
 source("rscripts/readDASLER.R")
 print(sum(OUT$processed))
 
+source("rscripts/readCyano.R")
+print(sum(OUT$processed))
