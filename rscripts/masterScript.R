@@ -72,5 +72,5 @@ print(sum(OUT$processed))
 source("rscripts/readDirL.R")
 print(sum(OUT$processed))
 
-write.table(OUT, "output/summary.status.csv", row.names = FALSE)
+write.table(OUT, "processed_data/summary.status.csv", row.names = FALSE)
 
