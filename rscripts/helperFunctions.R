@@ -28,6 +28,7 @@ return(temp)
 result_convert <- function (x){
   if( !is.character(x)) warning("Expecting a character vector")
   ## strip blanks
+  require(plyr)
  x <- gsub( "[[:space:]]", replacement="", x)
 
   ###

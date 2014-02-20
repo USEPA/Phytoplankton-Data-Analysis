@@ -1,0 +1,124 @@
+### 
+library(XLConnect)
+## to keep the out processed filed 
+
+setwd("originalData/algae/EFR Phytoplankton Data/")
+
+id1 <- grepl(pattern="^Phyto", OUT$file)
+id2 <- grepl(pattern="/l/", OUT$full_file_name)
+id <- id1 & id2
+
+OUTsub <- OUT[id, ]
+idSheets <- nchar(OUT$sheet) == 3  ## only use three letter sheets
+
+OUTsub2 <- OUT[id  & !OUT$processed &  idSheets, ]
+
+
+OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
+OUT$skip[id  & !OUT$processed & !idSheets ] <- "Summary sheets with graphs"
+
+
+files <- unique(OUTsub2$full_file_name)
+
+dimCheck <- 0
+for( j in 1:length(files)){
+  err <-    try( wb     <- loadWorkbook(files[j]) )
+  if(class(err) == "try-error") print( "File Missing") 
+  # 
+  sheets <- getSheets(wb)
+  
+  sheets <- sheets[nchar(sheets)==3] ## only use 3 
+for(i in 1:length(sheets)){
+   print(i)
+  temp <- readWorksheet(wb, sheet=sheets[i], header = FALSE,startCol=1, endCol=9 )
+  temp <- temp[!is.na(temp[,1]), ]
+  
+   temp$sheet_id <- OUTsub2$sheet_id[i]
+  dimCheck <- nrow(temp) + dimCheck
+if(i == 1 & j == 1){AAA <- temp} else{
+  AAA <- merge(AAA, temp, all = TRUE)
+}
+}
+} 
+
+### 
+
+temp_Depth <- as.numeric(gsub("\'","", AAA$Col5)  )
+ID <- paste("2", AAA$Col1, AAA$Col2, format(AAA$Col4, "%Y%m%d" ), 9999, formatC( temp_Depth, width = 3, flag = "0"), sep = "")
+
+AAA <- cbind(AAA, split_sampleID(ID) )
+algae <- data.frame(ID = ID,
+                     lake = AAA$Col1,
+                     station = AAA$Col2,
+                     depth_ft = temp_Depth,
+                     date = format(AAA$Col4, "%Y%m%d" ),
+                     taxa = AAA$Col6,
+                     cell_per_l = AAA$Col8,
+                     BV.um3.L = AAA$Col9,  ## how can I be certain about these units?
+                     class = NA,
+                     hab = FALSE,
+                     sheet_id = AAA$sheet_id )
+
+
+#### pick up other files in directory, copied elsewhere
+
+id <- OUT$full_file_name == "Drew data/h/phytodata2005.xls"
+OUT$processed[id] <- TRUE
+
+err <-    try( wb     <- loadWorkbook(OUT$full_file_name[id] ) )
+if(class(err) == "try-error") print( "File Missing") 
+temp <- readWorksheet(wb,sheet=1)
+
+temp$sheet_id <- OUT$sheet_id[id]
+temp_Depth <- as.numeric(gsub("\'","", temp$DEPTH)  )
+
+ID <- paste("2", temp$LAKE, temp$STATION, format(temp$DATE, "%Y%m%d" ), 9999, formatC( temp_Depth, width = 3, flag = "0"), sep = "")
+
+
+algae1 <- data.frame(ID = ID,
+                    lake = temp$LAKE,
+                    station = temp$STATION,
+                    depth_ft = temp_Depth,
+                    date = format(temp$DATE, "%Y%m%d" ),
+                    taxa = temp$TAXA,
+                    cell_per_l = temp$CELLS_L,
+                    BV.um3.L = temp$BV_UM3_L,  ## how can I be certain about these units?
+                    class = NA,
+                    hab = FALSE,
+                    sheet_id = temp$sheet_id )
+#####
+
+id <- OUT$full_file_name == "Drew data/g/Copy of 2007.xls"
+OUT$processed[id] <- TRUE
+
+err <-    try( wb     <- loadWorkbook(OUT$full_file_name[id] ) )
+if(class(err) == "try-error") print( "File Missing") 
+temp <- readWorksheet(wb,sheet=1, header = FALSE)
+temp$sheet_id <- OUT$sheet_id[id]
+
+temp_Depth <- as.numeric(gsub("\'","", temp$Col5)  )
+ID <- paste("2", temp$Col1, temp$Col2, format(temp$Col4, "%Y%m%d" ), 9999, formatC( temp_Depth, width = 3, flag = "0"), sep = "")
+### note some stations have extra letter.
+
+algae2 <- data.frame(ID = ID,
+                     lake = temp$Col1,
+                     station = temp$Col2,
+                     depth_ft = temp_Depth,
+                     date = format(temp$Col4, "%Y%m%d" ),
+                     taxa = temp$Col6,
+                     cell_per_l = temp$Col7,
+                     BV.um3.L = temp$Col8,  ## how can I be certain about these units?
+                     class = NA,
+                     hab = FALSE,
+                     sheet_id = temp$sheet_id )
+
+
+
+
+algae0 <- rbind(algae2, algae1, algae)
+
+setwd(homeDir)
+if(WRITE){
+  write.table(algae0, "processed_data/algae.csv", row.names=FALSE, sep = ",")                    
+#  write.table(WQ_all, "processed_data/water_quality.csv", sep = ",", row.names=FALSE)                    
+}

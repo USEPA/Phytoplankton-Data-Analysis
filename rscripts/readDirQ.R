@@ -11,6 +11,7 @@ id <- grepl(pattern="/q/", OUT$full_file_name)
 OUTsub <- OUT[id & OUT$processed == FALSE, ]
 
 OUTsub2 <- subset(OUTsub, file == "EFR2011 CT Data organized.xlsx")  ## one file
+
 OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
 
 OUTsub2 <- subset(OUTsub2, ! sheet %in% c( "ALL", "Sheet1", "Sheet2") )
