@@ -5,6 +5,8 @@ homeDir <- "/Users/mattpocernich/repos/epa_2013/2013/TO 0016/analysis/Phytoplank
 setwd(homeDir)
 
 source("rscripts/helperFunctions.R")
+library(XLConnect)
+
 WRITE<- TRUE
 
 OUT   <- read.table("output/reducedFileSurvey.0214.csv", sep = ",", header = TRUE, as.is = TRUE)
@@ -20,8 +22,25 @@ id <- OUT$sheet == "Sample Scores"
 OUT$skip[id] <- "redundant"
 OUT$processed[id] <- TRUE
 
+id <- OUT$file == "WQ Sampling Status 2012.xlsx"
+OUT$skip[id] <- "Cost Details."
+OUT$processed[id] <- TRUE
+
+id <- OUT$file == "FY13 Lab Analysis Details.xlsx"
+OUT$skip[id] <- "Cost Details., some location lat lon"
+OUT$processed[id] <- TRUE
+
+
+id <- OUT$file == "FY13 Lab Analysis Estimate.xlsx"
+OUT$skip[id] <- "Cost Details., some location lat lon"
+OUT$processed[id] <- TRUE
+
 id<- OUT$file %in%c("EFR-2001-Run1.xls" , "EFR-2001-Run3.xls" )
 OUT$skip[id] <- "superceded"
+OUT$processed[id] <- TRUE
+
+id<- grepl( "Jade", OUT$file  )
+OUT$skip[id] <- "Odd format, contains taxa list and metrics. Not imported"
 OUT$processed[id] <- TRUE
 
 
@@ -36,6 +55,7 @@ OUT$processed[id2| id4] <- TRUE
 id <- OUT$nrow == 0
 OUT$skip[id] <- "empty"
 OUT$processed[id] <- TRUE
+
 
 ####
 id<- OUT$file %in%c("EFR phyto 8-23-2011.xls" )
