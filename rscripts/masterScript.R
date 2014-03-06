@@ -92,5 +92,12 @@ print(sum(OUT$processed))
 source("rscripts/readDirL.R")
 print(sum(OUT$processed))
 
-write.table(OUT, "processed_data/summary.status.csv", row.names = FALSE)
+source("rscripts/readRawData.R")
+print(sum(OUT$processed))
+
+source("rscripts/readSample.R")
+print(sum(OUT$processed))
+
+
+write.table(OUT, "processed_data/summary.status0226.csv", row.names = FALSE, sep = ",")
 
