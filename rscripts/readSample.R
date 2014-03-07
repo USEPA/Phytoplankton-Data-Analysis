@@ -3,6 +3,8 @@ setwd("originalData/algae/EFR Phytoplankton Data/")
 id <- grepl("Phytoplankton", OUT$file) & grepl("Sample Results", OUT$sheet)
 
 OUTsub2 <- OUT[id & OUT$processed == FALSE, ]
+#OUTsub2 <- OUT[id , ]
+
 OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
 
 
@@ -25,17 +27,25 @@ for( i in 2:nrow(OUTsub2)){
   temp <- temp[, names(temp) != "Analyte.1"]
   #  print(tail(temp))
   dimCheck <- dimCheck + nrow(temp)
-  
   temp$sheet_id <- OUTsub2$sheet_id[i]
+if(!  is.numeric(temp$Date.Analyzed) ){
+  
+  temp$Date.Analyzed <- as.numeric(temp$Date.Analyzed)
+}
+  
   AAA <- merge(temp,AAA,  all.x = TRUE, all.y = TRUE )
   
 }
 
 if(dimCheck != nrow(AAA)) warning("Check your merge.")
 
-ID <- paste(AAA$Location, format(AAA$Sample.Date, "%Y%m%d"), 
+ID <- paste(AAA$Location, AAA$Sample.Date, 
             formatC(AAA$Sample.Time, width = 4, flag = "0"),
             formatC(AAA$Sample.Depth, width = 3, flag = "0"), sep = "")
+
+ii <- nchar(ID)== 24
+ID <- ID[ii] 
+AAA  <- AAA[ii, ]
 
 algae <- data.frame(ID = ID,
                     lake = substr(ID, 2,4),
@@ -43,8 +53,8 @@ algae <- data.frame(ID = ID,
                     depth_ft = substr(ID,22,24 ),
                     date = substr(ID, start=10, stop=17),
                     taxa = AAA$Taxa,
-                    cell_per_l = AAA$Density....l.,
-                    BV.um3.L = AAA$Biovolume..um3.L.,  ## how can I be certain about these units?
+                    cell_per_l = AAA$Cells.liter,
+                    BV.um3.L = AAA$Total.biovolume..µm3.L.,  ## how can I be certain about these units?
                     class = NA,
                     hab = FALSE,
                     sheet_id = AAA$sheet_id)

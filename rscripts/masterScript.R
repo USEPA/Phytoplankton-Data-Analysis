@@ -56,6 +56,10 @@ id <- OUT$nrow == 0
 OUT$skip[id] <- "empty"
 OUT$processed[id] <- TRUE
 
+id <- grepl("^HAB", OUT$file)
+OUT$skip[id ] <- "Contained column names for density and biovolume, but seem to be missing results"
+OUT$processed[id] <- TRUE
+
 
 ####
 id<- OUT$file %in%c("EFR phyto 8-23-2011.xls" )
@@ -96,6 +100,9 @@ source("rscripts/readRawData.R")
 print(sum(OUT$processed))
 
 source("rscripts/readSample.R")
+print(sum(OUT$processed))
+
+source("rscripts/readEFR.R")
 print(sum(OUT$processed))
 
 
