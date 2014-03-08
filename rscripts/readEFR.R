@@ -1,4 +1,6 @@
+### check 0307
 ### Read EFF Phyto.
+
 setwd("originalData/algae/EFR Phytoplankton Data/")
 
 id <- grepl("^EFR", OUT$file, ignore.case=FALSE) & OUT$ncol == 9
@@ -8,6 +10,7 @@ id <- grepl("^EFR", OUT$file, ignore.case=FALSE) & OUT$ncol == 9
 OUTsub2 <- OUT[id  & !OUT$processed, ]
 
 OUT$processed[id  & !OUT$processed ] <- TRUE
+OUT$script[id  & !OUT$processed ] <- "readEFR.R"
 
 
 
@@ -62,6 +65,7 @@ algae <- data.frame(ID = ID,
 setwd(homeDir)
 
 if(WRITE){
-  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",")      
+  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
   
-}  
+}
+

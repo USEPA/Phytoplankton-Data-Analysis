@@ -1,3 +1,5 @@
+## check 0307
+
 setwd("originalData/algae/EFR Phytoplankton Data/")
 
 id <- grepl("Phytoplankton", OUT$file) & grepl("Sample Results", OUT$sheet)
@@ -6,6 +8,7 @@ OUTsub2 <- OUT[id & OUT$processed == FALSE, ]
 #OUTsub2 <- OUT[id , ]
 
 OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
+OUT$script[OUT$full_file_name %in% OUTsub2$full_file_name] <- "readSample.R"
 
 
 dimCheck <- 1

@@ -1,4 +1,5 @@
 library(reshape2)
+### check 0307
 
 setwd("originalData/algae/EFR Phytoplankton Data/")
 
@@ -9,6 +10,7 @@ OUTsub <- OUT[id, ]
 
 OUTsub2 <- subset(OUTsub, file == "92RAWDAT.xls")
 OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
+OUT$script[OUT$full_file_name %in% OUTsub2$full_file_name] <- "readDirK.R"
 
 err <-    try( wb     <- loadWorkbook(OUTsub2$full_file_name[1]) )
 if(class(err) == "try-error"){ print("Error")}
@@ -42,7 +44,7 @@ algae <- data.frame(ID = WQ1$ID,
                    date = WQ1$Collection,
                    taxa = WQ1$Taxon,
                    cell_per_l = WQ1$Density,
-                   BV.um3.L = WQ1$Biovolume,  ## how can I be certain about these units?
+                   BV.um3.L = WQ1[, 14],  ## how can I be certain about these units?, Biovolume lable duplicated.
                    class = NA,
                    hab = FALSE,
                    sheet_id = WQ1$sheet_id)
@@ -51,6 +53,8 @@ algae <- data.frame(ID = WQ1$ID,
 
 OUTsub2 <- OUTsub[grepl("EFR - Phytoplankton Results", OUTsub$file) ,  ]
 OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
+OUT$script[OUT$full_file_name %in% OUTsub2$full_file_name] <- "readDirK.R"
+
  i <- 1                   
   err <-    try( wb     <- loadWorkbook(OUTsub2$full_file_name[i]) )
   if(class(err) == "try-error") print( "File Missing")   
@@ -77,6 +81,7 @@ algae1 <- data.frame(ID = BBB$Sample.ID,
 
 OUTsub2 <- OUTsub[grepl("RUN", OUTsub$file,ignore.case=TRUE ) ,  ]
 OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
+OUT$script[OUT$full_file_name %in% OUTsub2$full_file_name] <- "readDirK.R"
 
 #### note some files are duplicates, I believe because of incorrectly copied dates.
 iDrop <- c("EFR-2001-Run1.xls" , "EFR-2001-Run3.xls" )

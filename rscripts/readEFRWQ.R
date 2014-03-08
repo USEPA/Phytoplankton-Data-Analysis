@@ -1,4 +1,4 @@
-
+### check 0307
 
 setwd("originalData/algae/EFR Phytoplankton Data/")
 
@@ -15,6 +15,7 @@ id4 <- grepl("Data Q&A", OUT$full_file_name,ignore.case=TRUE) #### do not includ
 OUTsub2 <- OUT[id  & !OUT$processed, ]
 
 OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
+OUT$script[OUT$full_file_name %in% OUTsub2$full_file_name] <- "readEFRWQ.R"
 
 shortListA <- OUT[id & !(id2 | id3| id4), ]
 

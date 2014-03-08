@@ -1,3 +1,5 @@
+## check 0307
+
 setwd("originalData/algae/EFR Phytoplankton Data/")
 
 
@@ -10,6 +12,7 @@ OUTsub2 <- OUT[id  & !id2, ]
 OUT$skip[id & id2] <- "Summary Table"
 
 OUT$processed[id] <- TRUE
+OUT$script[id] <- "readRawData.R"
 
 shortList <- OUTsub2
 #######
@@ -41,7 +44,7 @@ AAA$sample_id <- paste( temp$Station, temp$Collection, "9999", formatC(temp$Dept
 ## drop poor format and inconsistent first column.
 id <- nchar(AAA$sample_id) != 24
 
-AAA <- AAA[id, ]
+AAA <- AAA[!id, ]
 
 algae <- data.frame(ID = AAA$sample_id,
                     lake = substr(AAA$sample_id, 2,4),
@@ -59,6 +62,7 @@ algae <- data.frame(ID = AAA$sample_id,
 setwd(homeDir)
 
 if(WRITE){
-  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",")      
+  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
   
-}  
+}
+

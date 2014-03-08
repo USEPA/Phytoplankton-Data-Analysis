@@ -1,9 +1,11 @@
 setwd("originalData/algae/EFR Phytoplankton Data/")
+### check 0307
 
 id <- grepl("DASLER", OUT$sheet)
 
 OUTsub2 <- OUT[id & OUT$processed == FALSE, ]
 OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
+OUT$script[OUT$full_file_name %in% OUTsub2$full_file_name] <- "readDASLER.R"
 
 err <-    try( wb     <- loadWorkbook(OUTsub2$full_file_name[1]) )
 if(class(err) == "try-error"){ print("Error")}

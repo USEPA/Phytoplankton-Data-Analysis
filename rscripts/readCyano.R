@@ -1,5 +1,5 @@
 ### 
-library(XLConnect)
+### check 0307
 ## to keep the out processed filed 
 
 setwd("originalData/algae/EFR Phytoplankton Data/")
@@ -9,6 +9,7 @@ id <- grepl(pattern="^Cyano", OUT$sheetNames)
 OUTsub2 <- OUT[id  & !OUT$processed, ]
 
 OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
+OUT$script[OUT$full_file_name %in% OUTsub2$full_file_name] <- "readCyano.R"
 
 
 OUTsub2$hab <- grepl("HAB", OUTsub2$full_file_name, ignore.case=TRUE)
@@ -17,6 +18,7 @@ dimCheck <- 0
 for(i in 1:nrow(OUTsub2)){
 
 #for(i in 1:10){  
+  
   err <-    try( wb     <- loadWorkbook(OUTsub2$full_file_name[i]) )
   if(class(err) == "try-error") print( "File Missing") 
 #  print(i)
@@ -39,6 +41,16 @@ if(i == 1){AAA <- temp} else{
 }
 }
 
+#### check ID
+AAA <- factor_2_character(AAA)
+ii <- nchar(AAA$sample_id) != 24
+
+## ISSUE REPORTED FOR CLARIFICATION
+
+#Drew data/f/31tab Fall HAB Data EFR20121031,SRR20121107,TAR20121106 alg.xls
+
+AAA <- AAA[!ii, ]
+
 algae <- data.frame(ID = AAA$sample_id,
                      lake = substr(AAA$sample_id, 2,4),
                      station = substr(AAA$sample_id, 5, 9),
@@ -51,7 +63,8 @@ algae <- data.frame(ID = AAA$sample_id,
                      hab = AAA$hab,
                      sheet_id = AAA$sheet_id)
 setwd(homeDir)
+
 if(WRITE){
-  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",")                    
-#  write.table(WQ_all, "processed_data/water_quality.csv", sep = ",", row.names=FALSE)                    
+  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
+  
 }

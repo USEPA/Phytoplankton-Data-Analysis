@@ -7,13 +7,17 @@ setwd(homeDir)
 source("rscripts/helperFunctions.R")
 library(XLConnect)
 
+options(stringsAsFactors=FALSE)
 WRITE<- TRUE
 
-OUT   <- read.table("output/reducedFileSurvey.0214.csv", sep = ",", header = TRUE, as.is = TRUE)
-INFO <- read.table("output/reducedFileList.0214.csv", sep = ",", as.is = TRUE, header = TRUE)
+OUTold   <- read.table("output/reducedFileSurvey.0214.csv", sep = ",", header = TRUE, as.is = TRUE)
+OUT   <- read.table("output/reducedFileSurvey.0307.csv", sep = ",", header = TRUE, as.is = TRUE)
+INFO <- read.table("output/reducedFileList.0307.csv", sep = ",", as.is = TRUE, header = TRUE)
 
 ### sheets not processed
-OUT$skip <- NA
+OUT$skip   <- NA ## comments on scripts not processed
+OUT$script <-NA ## identify the script used for each file
+
 id <- OUT$sheet == "Sample Details"
 OUT$skip[id] <- "redundant"
 OUT$processed[id] <- TRUE
@@ -43,6 +47,17 @@ id<- grepl( "Jade", OUT$file  )
 OUT$skip[id] <- "Odd format, contains taxa list and metrics. Not imported"
 OUT$processed[id] <- TRUE
 
+id<- grepl( "All Lakes Phyto Data pre-1993.xlsx", OUT$file  )
+id2<- grepl( "Harsha Phyto Data pre-1993.xlsx", OUT$file  )
+
+
+OUT$skip[id | id2] <- "Not imported, contains no taxa descriptions"
+OUT$processed[id | id2] <- TRUE
+
+id <- OUT$sheet %in% c("LRN Phytoplankton Details ", "LRN Phytoplankton Scores")
+OUT$skip[id] <- "Do not contain data, only sample meta data"
+OUT$processed[id] <- TRUE
+
 
 id2 <- grepl("graph", OUT$full_file_name,ignore.case=TRUE)
 # id3 <- grepl("organized", OUT$full_file_name,ignore.case=TRUE)
@@ -68,6 +83,33 @@ OUT$processed[id] <- TRUE
 
 
 
+id <- OUT$sheet %in% c("Parameter_Code")
+OUT$skip[id] <- "Contains STORET Parameter Codes"
+OUT$processed[id] <- TRUE
+
+
+
+id <- OUT$sheet %in% c("Filtered Locations")
+OUT$skip[id] <- "Filter information"
+OUT$processed[id] <- TRUE
+
+id <- OUT$file == "EFR 1994 Phyto (2).xlsx" & OUT$sheet == "Original"
+OUT$skip[id] <- "Data processed with DASLER import, duplicate"
+OUT$processed[id] <- TRUE
+
+id <- OUT$file == "PHYTO94.xls" 
+OUT$skip[id] <- "Confirm how to calculate density and biovolume with these fields"
+OUT$processed[id] <- TRUE
+
+
+id <- OUT$file == "2007 (2).xls"
+OUT$skip[id] <- "Files have no headers; Confirm how to calculate density and biovolume with these fields"
+OUT$processed[id] <- TRUE
+
+
+OUT$script[OUT$processed] <- "Not Processed"
+
+
 source("rscripts/readDirG.R")
 print(sum(OUT$processed))
 
@@ -89,7 +131,6 @@ print(sum(OUT$processed))
 source("rscripts/readAlgal.R")
 print(sum(OUT$processed))
 
-
 source("rscripts/readEDD.R")
 print(sum(OUT$processed))
 
@@ -105,6 +146,18 @@ print(sum(OUT$processed))
 source("rscripts/readEFR.R")
 print(sum(OUT$processed))
 
+source("rscripts/readMisc.R")
+print(sum(OUT$processed))
+
+
+
+xxx <- subset(OUT, ! processed)
+View(xxx)
 
 write.table(OUT, "processed_data/summary.status0226.csv", row.names = FALSE, sep = ",")
+xx <- paste("processed_data/algae_", format(Sys.time(), "%Y%m%d"), ".csv", sep = "")
+cmd <- paste('cp processed_data/algae.csv', xx )
 
+system( cmd)
+cmd <- paste("chmod a-w", xx)
+system( cmd )

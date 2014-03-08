@@ -1,3 +1,4 @@
+###check 0307
 setwd("originalData/algae/EFR Phytoplankton Data/")
 
 #### batch 8
@@ -8,8 +9,8 @@ id <- grepl("^Algal", OUT$sheetNames)
 ### files to explicitly skip first go around.
 
 OUTsub2 <- OUT[id  & !OUT$processed, ]
-
 OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
+OUT$script[OUT$full_file_name %in% OUTsub2$full_file_name] <- "readAlgal.R"
 
 
 
@@ -50,7 +51,7 @@ algae <- data.frame(ID = AAA$sample_id,
                      date = substr(AAA$sample_id, start=10, stop=17),
                      taxa = AAA$Genus.species,
                      cell_per_l = AAA$Concentration..cell...L.,
-                     BV.um3.L = AAA$Individual.biovolume..µm3.,  ## how can I be certain about these units?
+                     BV.um3.L = AAA$Total.biovolume..µm3.L.,  
                      class = NA,
                      hab = FALSE,
                      sheet_id = AAA$sheet_id)
@@ -58,7 +59,6 @@ algae <- data.frame(ID = AAA$sample_id,
 setwd(homeDir)
 
 if(WRITE){
-  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",")      
-            
-}  
-
+  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
+  
+}

@@ -1,5 +1,4 @@
-### 
-library(XLConnect)
+### check 0307
 ## to keep the out processed filed 
 
 setwd("originalData/algae/EFR Phytoplankton Data/")
@@ -13,10 +12,10 @@ idSheets <- nchar(OUT$sheet) == 3  ## only use three letter sheets
 
 OUTsub2 <- OUT[id  & !OUT$processed &  idSheets, ]
 
-
 OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
-OUT$skip[id  & !OUT$processed & !idSheets ] <- "Summary sheets with graphs"
+OUT$script[OUT$full_file_name %in% OUTsub2$full_file_name] <- "readDirL.R"
 
+OUT$skip[id  & !OUT$processed & !idSheets ] <- "Summary sheets with graphs"
 
 files <- unique(OUTsub2$full_file_name)
 
@@ -37,16 +36,16 @@ for(i in 1:length(sheets)){
   dimCheck <- nrow(temp) + dimCheck
 if(i == 1 & j == 1){AAA <- temp} else{
   AAA <- merge(AAA, temp, all = TRUE)
-}
-}
+   }} 
 } 
 
 ### 
-
 temp_Depth <- as.numeric(gsub("\'","", AAA$Col5)  )
-ID <- paste("2", AAA$Col1, AAA$Col2, format(AAA$Col4, "%Y%m%d" ), 9999, formatC( temp_Depth, width = 3, flag = "0"), sep = "")
+ID <- paste("2", AAA$Col1, substr(AAA$Col2, 1,5) , format(AAA$Col4, "%Y%m%d" ), 9999, formatC( temp_Depth, width = 3, flag = "0"), sep = "")
 
-AAA <- cbind(AAA, split_sampleID(ID) )
+#AAA <- cbind(AAA, split_sampleID(ID) )
+
+
 algae <- data.frame(ID = ID,
                      lake = AAA$Col1,
                      station = AAA$Col2,
@@ -64,6 +63,7 @@ algae <- data.frame(ID = ID,
 
 id <- OUT$full_file_name == "Drew data/h/phytodata2005.xls"
 OUT$processed[id] <- TRUE
+OUT$script[id] <- "readDirL.R"
 
 err <-    try( wb     <- loadWorkbook(OUT$full_file_name[id] ) )
 if(class(err) == "try-error") print( "File Missing") 
@@ -90,6 +90,7 @@ algae1 <- data.frame(ID = ID,
 
 id <- OUT$full_file_name == "Drew data/g/Copy of 2007.xls"
 OUT$processed[id] <- TRUE
+OUT$script[id] <- "readDirL.R"
 
 err <-    try( wb     <- loadWorkbook(OUT$full_file_name[id] ) )
 if(class(err) == "try-error") print( "File Missing") 
@@ -97,7 +98,7 @@ temp <- readWorksheet(wb,sheet=1, header = FALSE)
 temp$sheet_id <- OUT$sheet_id[id]
 
 temp_Depth <- as.numeric(gsub("\'","", temp$Col5)  )
-ID <- paste("2", temp$Col1, temp$Col2, format(temp$Col4, "%Y%m%d" ), 9999, formatC( temp_Depth, width = 3, flag = "0"), sep = "")
+ID <- paste("2", temp$Col1, substr(temp$Col2, 1,5) , format(temp$Col4, "%Y%m%d" ), 9999, formatC( temp_Depth, width = 3, flag = "0"), sep = "")
 ### note some stations have extra letter.
 
 algae2 <- data.frame(ID = ID,
@@ -118,7 +119,9 @@ algae2 <- data.frame(ID = ID,
 algae0 <- rbind(algae2, algae1, algae)
 
 setwd(homeDir)
+
 if(WRITE){
-  write.table(algae0, "processed_data/algae.csv", row.names=FALSE, sep = ",")                    
-#  write.table(WQ_all, "processed_data/water_quality.csv", sep = ",", row.names=FALSE)                    
+  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
+  
 }
+

@@ -1,4 +1,5 @@
 ### use objects from readData
+### check 0307
 
 ### directory G
 setwd("originalData/algae/EFR Phytoplankton Data/")
@@ -9,6 +10,8 @@ id  <- grepl(pattern="/g/", OUT$full_file_name)
 OUTsub <- OUT[id, ]
 OUTsub2 <- subset(OUTsub, file == "CELRL CT Water Quality Chemical Data 2012.xls")
 OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
+OUT$script[OUT$full_file_name %in% OUTsub2$full_file_name ] <- "readDirG.R"
+
 
 err <-    try( wb     <- loadWorkbook(OUTsub2$full_file_name[1]) )
 if(class(err) == "try-error"){ print("Error")}
@@ -31,6 +34,8 @@ for( i in 1:4){
 
 OUTsub2 <- subset(OUTsub, file == "CELRL RTI WQ Chemical Data 2012.xls")
 OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
+OUT$script[OUT$full_file_name %in% OUTsub2$full_file_name] <- "readDirG.R"
+
 
 err <-    try( wb     <- loadWorkbook(OUTsub2$full_file_name[1]) )
 if(class(err) == "try-error"){ print("Error")}
@@ -62,6 +67,7 @@ WQ_all$ID <- paste(WQ_all$location, WQ_all$sample_date, WQ_all$sample_time, WQ_a
 
 OUTsub2 <- OUTsub[grepl("HAB", OUTsub$file) & grepl("Cyanobacterial.Analysis.Report", OUTsub$sheetNames),  ]
 OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
+OUT$script[OUT$full_file_name %in% OUTsub2$full_file_name] <- "readDirG.R"
 
 
 AAA <- NULL
@@ -103,6 +109,7 @@ algae0 <- data.frame(ID = AAA$sample_id,
 
 OUTsub2 <- OUTsub[grepl("^efr", OUTsub$file) & grepl("^Lake", OUTsub$sheetNames),  ]
 OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
+OUT$script[OUT$full_file_name %in% OUTsub2$full_file_name] <- "readDirG.R"
 
 
 BBB <- NULL
@@ -125,10 +132,6 @@ BBB$ID <- paste("2",## assuming 2
                 formatC(BBB$Depth, width=3, flag = "0"), sep = "")      
 
 ##
-
-
-
-
 algae1 <- data.frame(ID = BBB$ID,
                     lake = BBB$Lake,
                     station = BBB$Station,

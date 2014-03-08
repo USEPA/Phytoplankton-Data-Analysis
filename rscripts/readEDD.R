@@ -1,8 +1,8 @@
+### check 0703
+
 setwd("originalData/algae/EFR Phytoplankton Data/")
 
 #### batch 8
-
-
 id <- grepl("EDD", OUT$sheet)
 
 ### files to explicitly skip first go around.
@@ -10,7 +10,9 @@ id <- grepl("EDD", OUT$sheet)
 OUTsub2 <- OUT[id  & !OUT$processed, ]
 
 OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
-OUT$skip[OUT$full_file_name %in% OUTsub2$full_file_name]   <- "Processsed by not incorporated.  Complicated."
+OUT$script[OUT$full_file_name %in% OUTsub2$full_file_name] <- "readEDD.R"
+
+OUT$skip[OUT$full_file_name %in% OUTsub2$full_file_name]   <- "Processsed by not incorporated.  Cannot resolve sample ID."
 
 
 shortList <- subset(OUTsub2, ncol == 11)
@@ -36,8 +38,6 @@ for(i in 1:nrow(shortList)){
 }
 
 temp11 <- batch8
-
-
 shortList <- subset(OUTsub2, ncol == 21)
 #######
 
@@ -91,13 +91,5 @@ temp21 <- batch8
 #                      result_num = xx$result_num,       
 #                      ID = xx$ID )
 
-
-
-
 setwd(homeDir)
-
-if(WRITE){
-  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",")      
-            
-}  
 

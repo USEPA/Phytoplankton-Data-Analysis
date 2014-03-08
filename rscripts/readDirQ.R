@@ -1,8 +1,5 @@
-library(XLConnect)
-## to keep the out processed filed 
-# OUT   <- read.table("output/reducedFileSurvey.csv", sep = ",", header = TRUE, as.is = TRUE)
+### check 0307
 
-# INFO  <- read.table("output/reducedFileList.csv", sep = ",", header = TRUE, as.is = TRUE)
 
 setwd("originalData/algae/EFR Phytoplankton Data/")
 
@@ -11,8 +8,9 @@ id <- grepl(pattern="/q/", OUT$full_file_name)
 OUTsub <- OUT[id & OUT$processed == FALSE, ]
 
 OUTsub2 <- subset(OUTsub, file == "EFR2011 CT Data organized.xlsx")  ## one file
-
 OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
+OUT$script[OUT$full_file_name %in% OUTsub2$full_file_name] <- "readDirQ.R"
+
 
 OUTsub2 <- subset(OUTsub2, ! sheet %in% c( "ALL", "Sheet1", "Sheet2") )
 
