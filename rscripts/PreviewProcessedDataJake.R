@@ -1,4 +1,4 @@
-# PREVIEW PHYTOPLANKTON DATA THAT MATT IMPORTED
+# PREVIEW PROCESSED DATA FROM MATT
 
 # LIBRARIES-----------------------------------------------------
   library(ggplot2)
@@ -126,7 +126,7 @@
 # Inspect depth
   table(chem$sample_depth)  # Looks good
 
-# CENSORED DATA-------------------------------------------------------------
+# CENSORED WATER CHEM DATA-------------------------------------------------------------
 # Dual censored values: microcystis
 # Few data, all censored.  Won't use in analysis
   chem[!is.na(chem$qual1) & !is.na(chem$qual2), 
@@ -150,7 +150,7 @@
   chem[chem$qual1 == 'ND' & !is.na(chem$qual1), 'result_final'] =
     chem[chem$qual1 == 'ND' & !is.na(chem$qual1), 'detect_limit'] * 0.5
 
-# TAKE A LOOK AT ANALYTES---------------------------------------------------
+# TAKE A LOOK AT WATER CHEM ANALYTES---------------------------------------------------
   unique(chem$analyte)  # 101 analytes.  Lots of overlap in N species
 
 # Look at N species
@@ -193,8 +193,11 @@
   head(dcast(chem.short, ID ~ analyte, 
              value.var = "result_final"))  # Defaults to length,  Must be duplicates
 
+# Inspect duplicates
   length(chem.short[duplicated(chem.short[, c('ID', 'sample_depth', 'rdate', 'lake', 'analyte')]),
              c('ID', 'sample_depth', 'rdate', 'lake', 'analyte')])  # 5308 dups!
+
+  chem.short[chem.short$ID == "2EFR20004201108231100010" & chem.short$analyte ==  "Dissolved Organic Carbon",]
 
 
 
