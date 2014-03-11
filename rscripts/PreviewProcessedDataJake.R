@@ -2,10 +2,10 @@
 
 # LIBRARIES-----------------------------------------------------
   library(ggplot2)
-  library(reshape)
+  library(reshape2)
 
-# READ IN AND FORMAT .csv FROM OUTPUT FOLDER-------------------------
-# Reading from output/processed_data folder
+# READ IN AND FORMAT algae.csv FROM processed_data FOLDER-------------------------
+# Reading from processed_data folder
   algae <- read.table("processed_data/algae.csv", sep = ",", header = TRUE, as.is = TRUE)
   head(algae)
   str(algae)
@@ -104,13 +104,100 @@
     ggplot(ld.algae.agg, aes(rdate, prop.bg.cell)) + geom_point() + ylab('Proportion Blue Green by Cell count') + 
       scale_x_date(breaks=x_breaks, labels = x_labels)
 
-# PREVIEW WATER CHEM DATA THAT MATT IMPORTED
+# PREVIEW WATER CHEM DATA THAT MATT IMPORTED------------------------------------------
 # Reading from output/processed_data folder
   chem <- read.table("processed_data/water_quality.csv", sep = ",", header = TRUE, as.is = TRUE,na.strings=c("", "NA"))
   head(chem)
   str(chem)
-  chem$rdate <- as.Date(as.character(chem$date), format = '%Y%m%d')
 
-# Review number of samples, lakes, dates, etc
-table(algae$lake, substr(algae$date, 1,4))  # data from all lakes in 92, only EFR >92
-table(algae$rdate, algae$hab)  # Only two dates of HAB sampling entered
+# 9999 or 99999999 are used for time and data when data are not provided.  Inspect occurence.
+  table(chem$sample_date)  # No 999 entries, but 726 occurences of 30501 and 6 of 30502?
+  table(chem$sample_time)  # 74 occurences of 9999
+  chem$rdate <- as.Date(as.character(chem$sample_date), format = '%Y%m%d')
+  table(chem$rdate)
+
+# Inspect ID
+  table(nchar(chem$ID))  # Most are 24, as expected, but also have 21, 22, and 23.
+  table(substr(chem$ID, start=2, stop=4))  # Mostly EFR.  9 lakes represented
+  chem$lake <-  substr(chem$ID, start=2, stop=4)
+  chem$station <- substr(chem$ID, start=5, stop=nchar(chem$ID)-15)
+  chem[!is.na(chem$station), c('ID', 'lake', 'station')]  # Some of these have seem to be missing digit for date
+
+# Inspect depth
+  table(chem$sample_depth)  # Looks good
+
+# CENSORED DATA-------------------------------------------------------------
+# Dual censored values: microcystis
+# Few data, all censored.  Won't use in analysis
+  chem[!is.na(chem$qual1) & !is.na(chem$qual2), 
+       c('analyte', 'original', 'qual1', 'qual2', 'result_num2', 'result_num')
+       ]  # 68 dual censored microsystin values
+  table(chem[chem$analyte == 'Microcystin', 'original']) #  All values are censored, mostly left.
+  table(chem[chem$analyte == 'Microcystin', c('ID', 'rdate','original')]) #  2011 data from EFR only.  Won't use in analysis
+
+# Left censored values
+  chem$result_final <- chem$result_num  # This vector will contain final numbers for analysis
+  table(chem$qualifiers)  # Don't know what most of these are.  U is undetectable
+  table(chem$qual1)  # Simplified qualifiers.
+# Left censored values will be set to 1/2 dl
+  chem[chem$qual1 == '<' & !is.na(chem$qual1), 'result_final'] = 
+    chem[chem$qual1 == '<' & !is.na(chem$qual1), 'result_num'] * 0.5
+
+# ND: when the data are reported as ND with a U qualifier, Matt set the value equal to -777.
+  chem[chem$qual1 == 'ND' & !is.na(chem$qual1),  # View data 
+       c('ID', 'analyte', 'qualifiers', 'qual1', 'detect_limit', 'original', 'result_num')]
+# Will change to 1/2 detection limit
+  chem[chem$qual1 == 'ND' & !is.na(chem$qual1), 'result_final'] =
+    chem[chem$qual1 == 'ND' & !is.na(chem$qual1), 'detect_limit'] * 0.5
+
+# TAKE A LOOK AT ANALYTES---------------------------------------------------
+  unique(chem$analyte)  # 101 analytes.  Lots of overlap in N species
+
+# Look at N species
+  unique(chem[grep(pattern='Nitrogen', x=chem$analyte), 'analyte'])
+  chem[chem$analyte == 'Ammonia Nitrogen', 'analyte'] = 'Nitrogen, Ammonia'
+  chem[chem$analyte == 'Nitrate+Nitrite Nitrogen' | chem$analyte == 'Nitrate + Nitrite Nitrogen',
+       'analyte'] = 'Nitrogen, Nitrate-Nitrite'
+
+# Create a list of species I want to retain for analysis
+  analyte.list <- c('Alkalinity, Total (As CaCO3)',
+                    'Nitrogen, Ammonia',
+                    'Nitrogen, Kjeldahl, Total',
+                    'Organic Carbon, Dissolved',
+                    'Phosphorus, Total (As P)',
+                    'Total Hardness (As CaCO3)',
+                    'Total Organic Carbon',
+                    'Alkalinity',
+                    'Dissolved Organic Carbon',
+                    "Nitrogen, Nitrate-Nitrite",
+                    "Nitrogen Kjeldahl",
+                    "Phosphorus",
+                    "Total Dissolved Solids",
+                    "Total Hardness",
+                    "Total Suspended Solids",
+                    "Chlorophyll a",
+                    "Atrazine",
+                    "Temp.Celsius",
+                    "D.O...mg.L.",                 
+                    "SP.Cond..UMHO.cm.",
+                    "pH",
+                    "Turbidity..NTU.",             
+                    "Secchi..Inches.",
+                    'Nitrate Nitrogen'
+                    )
+  chem.short <- chem[chem$analyte %in% analyte.list, ] 
+# Remove commas from analyte names, confuses ggplot
+  unique(sub(pattern=',', replacement=".", x=chem.short$analyte))
+
+# Cast into wide format
+  head(dcast(chem.short, ID ~ analyte, 
+             value.var = "result_final"))  # Defaults to length,  Must be duplicates
+
+  length(chem.short[duplicated(chem.short[, c('ID', 'sample_depth', 'rdate', 'lake', 'analyte')]),
+             c('ID', 'sample_depth', 'rdate', 'lake', 'analyte')])  # 5308 dups!
+
+
+
+
+
+
