@@ -154,7 +154,7 @@ print(sum(OUT$processed))
 xxx <- subset(OUT, ! processed)
 View(xxx)
 
-write.table(OUT, "processed_data/summary.status0226.csv", row.names = FALSE, sep = ",")
+write.table(OUT, "processed_data/summary.status0314.csv", row.names = FALSE, sep = ",")
 xx <- paste("processed_data/algae_", format(Sys.time(), "%Y%m%d"), ".csv", sep = "")
 cmd <- paste('cp processed_data/algae.csv', xx )
 
