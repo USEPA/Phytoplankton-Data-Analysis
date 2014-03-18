@@ -67,7 +67,7 @@ OUT$script[OUT$full_file_name %in% OUTsub2$full_file_name] <- "readDirK.R"
 algae1 <- data.frame(ID = BBB$Sample.ID,
                     lake = substr(BBB$Sample.ID, 2,4),
                     station = substr(BBB$Sample.ID, 5,9),
-                    depth_ft = 999,
+                    depth_ft = substr(BBB$Sample.ID, 22,24),
                     date = substr(BBB$Sample.ID, start=10, stop=17),
                     taxa = BBB$Species,
                     cell_per_l = BBB$Number.of.Cells.L,

@@ -81,13 +81,9 @@ id<- OUT$file %in%c("EFR phyto 8-23-2011.xls" )
 OUT$skip[id] <- "duplicated in Drew d/"
 OUT$processed[id] <- TRUE
 
-
-
 id <- OUT$sheet %in% c("Parameter_Code")
 OUT$skip[id] <- "Contains STORET Parameter Codes"
 OUT$processed[id] <- TRUE
-
-
 
 id <- OUT$sheet %in% c("Filtered Locations")
 OUT$skip[id] <- "Filter information"
@@ -150,11 +146,10 @@ source("rscripts/readMisc.R")
 print(sum(OUT$processed))
 
 
-
 xxx <- subset(OUT, ! processed)
 View(xxx)
 
-write.table(OUT, "processed_data/summary.status0314.csv", row.names = FALSE, sep = ",")
+write.table(OUT, "processed_data/summary.status0319.csv", row.names = FALSE, sep = ",")
 xx <- paste("processed_data/algae_", format(Sys.time(), "%Y%m%d"), ".csv", sep = "")
 cmd <- paste('cp processed_data/algae.csv', xx )
 
