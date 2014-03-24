@@ -2,10 +2,12 @@
 library(plyr)
 
 algae_dat <- read.table(file="processed_data/algae_20140318.csv", sep = ",", header = TRUE, fill = TRUE, as.is = TRUE)
+algae_dat <- read.table(file="processed_data/test.csv", sep = ",", header = TRUE, fill = TRUE, as.is = TRUE)
+
 info <- read.table(file="processed_data/summary.status0319.csv", sep = ",", header = TRUE, fill = TRUE, as.is = TRUE)
 info$sheet_id <- as.numeric(info$sheet_id)
 
-algae_dat <- algae_dat[ -210022, ]  ### track down row.
+algae_dat <- algae_dat[ -210022, ]  ### track down row. Contains 'Chrysophyta \A'
 
 numClass <- c("depth_ft", "sheet_id", "cell_per_l", "BV.um3.L")
 
@@ -54,7 +56,6 @@ ii <- algae_dat$id1  %in% indx_gt1$id1
 
 ### big differences, some sheets recording wrong column. Code checked
 ### note !ii are unambiguous records
-
 algae_good <- algae_dat[!ii, ]
 
 test <- algae_dat[ii, ]
@@ -111,5 +112,4 @@ temp <- algae_dat[iii,]
 temp$qual_replicate <- "Q"
 algae_good <- rbind(algae_good, temp)
 
-
-write.table( algae_good, paste("processed_data/cleaned_algae_", format(Sys.time(), "%Y%m%d"), ".csv", sep = ""), row.names=FALSE )
+write.table( algae_good, paste("processed_data/cleaned_algae_", format(Sys.time(), "%Y%m%d"), ".csv", sep = ""), sep = ",", row.names=FALSE )
