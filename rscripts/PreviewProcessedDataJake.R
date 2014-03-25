@@ -6,14 +6,28 @@
 
 # READ IN AND FORMAT algae.csv FROM processed_data FOLDER-------------------------
 # Reading from processed_data folder
-  algae <- read.table("processed_data/algae.csv", sep = ",", header = TRUE, as.is = TRUE)
+  algae <- read.table("processed_data/cleaned_algae_20140324.csv", sep = ",", header = TRUE, as.is = TRUE, na.strings=c("", "NA"))
   head(algae)
   str(algae)
-  algae$rdate <- as.Date(as.character(algae$date), format = '%Y%m%d')
 
 # Review number of samples, lakes, dates, etc
-  table(algae$lake, substr(algae$date, 1,4))  # data from all lakes in 92, only EFR >92
-  table(algae$rdate, algae$hab)  # Only two dates of HAB sampling entered
+  table(algae$date)  # Contains a number of incorrectly formatted dates
+  table(algae$lake)  # A few strange values. grr=GRR, lake is incorrect.  Others are from District 3
+  algae <- algae[algae$lake != 'lake',]  # Remove 'lake' observation
+  algae[algae$lake == "grr", "lake"] = "GRR"  # Rename "grr"
+  unique(algae$station)  # Still need to consult with Jade on a few of these
+  unique(algae$depth_ft) # Good
+  #strip leading and trailing spaces in taxa  
+    algae$taxa <- gsub("^\\s+|\\s+$", "", algae$taxa)
+  unique(algae$taxa)
+  unique(algae$class)  # Some numbers in "class" field
+  unique(algae$hab)  # Some numbers in "hab" field
+  unique(algae$qual_replicate)  # Looks good, Q or R
+
+# Revisit after above issues have been resolved
+  #algae$rdate <- as.Date(as.character(algae$date), format = '%Y%m%d')
+  #table(algae$lake, substr(algae$date, 1,4))  # data from all lakes in 92, only EFR >92
+  #table(algae$rdate, algae$hab)  # Only two dates of HAB sampling entered
 
 # POPULATE 'CLASS' FIELD----------------------------------------
   unique(algae$class)  # Not filled out yet
