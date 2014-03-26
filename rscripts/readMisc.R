@@ -4,7 +4,7 @@ setwd("originalData/algae/EFR Phytoplankton Data/")
 
 id <- OUT$sheetNames == "LAKE; STATION; I_D__; DATE; DEPTH; TAXA; CELLS_L; BV_UM3_L"
 ### Read EFF Phyto.
-
+ 
 
 ### files to explicitly skip first go around.
 
@@ -19,7 +19,8 @@ shortList <- OUTsub2
 
 dimCheck <- nrow(AAA)
 ### lesson learned today.  You can't merge a NULL to a data.frame and get anything returned.
-print(dimCheck)
+
+#  print(dimCheck)
 AAA <- NULL
 for( i in 1:nrow(OUTsub2)){
   
@@ -60,13 +61,21 @@ algae <- data.frame(ID = ID,
                     hab = FALSE,
                     sheet_id = AAA$sheet_id)
 
+
+ii <- grepl("^1902", algae$date)
+algae$date[ii] <- gsub(pattern="^1902",replacement="2002", algae$date[ii] )
+
+i <- grepl("^2", algae$date)           
+algae <- algae[i,]
+
+### dropped remaing data with ambiguous dates
+chunck_check(algae)
+
 setwd(homeDir)
 
 
-
-
 if(WRITE){
-  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",",  append=TRUE)      
+  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = "\t",  append=TRUE, col.names=FALSE)      
   
 }  
 
@@ -85,7 +94,7 @@ shortList <- OUTsub2
 #######
 dimCheck <- 0
 ### lesson learned today.  You can't merge a NULL to a data.frame and get anything returned.
-print(dimCheck)
+# print(dimCheck)
 AAA <- NULL
 for( i in 1:nrow(OUTsub2)){
   
@@ -135,14 +144,24 @@ algae <- data.frame(ID = ID,
                     class = NA,
                     hab = FALSE,
                     sheet_id = AAA$sheet_id)
+           
+i <- grepl("^2020", algae$date)
+algae <- algae[!i,]
+
+print(paste("Dropping ", sum(i), " Records with bad dates"))
+
+algae$taxa <- gsub(pattern='"', replacement = "", algae$taxa)
+algae$taxa <- gsub(pattern="'", replacement = "", algae$taxa)
+
+chunck_check(algae)
+
 
 setwd(homeDir)
 
 
 
-
 if(WRITE){
-  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",", append=TRUE)      
+  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = "\t", append=TRUE, col.names=FALSE)      
   
 }  
 
@@ -182,13 +201,18 @@ algae <- data.frame(ID = ID,
                     hab = FALSE,
                     sheet_id = OUTsub2$sheet_id[1])
 
+algae$taxa <- gsub(pattern='"', replacement = "", algae$taxa)
+algae$taxa <- gsub(pattern="'", replacement = "", algae$taxa)
+
+chunck_check(algae)
+
 setwd(homeDir)
 
 
 
 
 if(WRITE){
-  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",", append=TRUE, col.names=FALSE)      
+  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = "\t", append=TRUE, col.names=FALSE)      
   
 }  
 

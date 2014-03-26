@@ -1,5 +1,5 @@
 library(reshape2)
-### check 0307
+### check 0307, 0324
 
 setwd("originalData/algae/EFR Phytoplankton Data/")
 
@@ -142,10 +142,11 @@ wq_dat <- data.frame(location = xx$Station,
 wq_dat <- wq_datK <- factor_2_character(wq_dat )
 
 setwd(homeDir)
-
+chunck_check(algae)
+chunck_check(algae1)
 if(WRITE){
-write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
-write.table(algae1, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
+write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = "\t", append= TRUE, col.names = FALSE)          
+write.table(algae1, "processed_data/algae.csv", row.names=FALSE, sep = "\t", append= TRUE, col.names = FALSE)          
 print(dim(wq_dat))
 #print(head(wq_dat))
 write.table(wq_dat, "processed_data/water_quality.csv", sep = ",", row.names=FALSE, col.names=FALSE, append = TRUE)                    

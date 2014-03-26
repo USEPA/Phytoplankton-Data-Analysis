@@ -12,14 +12,12 @@ OUTsub2 <- OUT[id  & !OUT$processed, ]
 OUT$processed[id  & !OUT$processed ] <- TRUE
 OUT$script[id  & !OUT$processed ] <- "readEFR.R"
 
-
-
 shortList <- OUTsub2
 #######
 
 dimCheck <- 1
-
 dimCheck <- nrow(AAA)
+
 ### lesson learned today.  You can't merge a NULL to a data.frame and get anything returned.
 print(dimCheck)
 for( i in 1:nrow(OUTsub2)){
@@ -37,10 +35,6 @@ for( i in 1:nrow(OUTsub2)){
   AAA <- merge(temp,AAA,  all.x = TRUE, all.y = TRUE )
   }
 }
-
-
-
-
 
 date <- paste("19", AAA$Date..yymmdd., sep = "")
 depth <- formatC(AAA$Depth.ft, flag = "0", width = 3)
@@ -61,11 +55,11 @@ algae <- data.frame(ID = ID,
                     class = NA,
                     hab = FALSE,
                     sheet_id = AAA$sheet_id)
-
+chunck_check(algae)
 setwd(homeDir)
 
 if(WRITE){
-  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
+  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = "\t", append= TRUE, col.names = FALSE)          
   
 }
 

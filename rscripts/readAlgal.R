@@ -56,9 +56,11 @@ algae <- data.frame(ID = AAA$sample_id,
                      hab = FALSE,
                      sheet_id = AAA$sheet_id)
 
+chunck_check(algae)
+
 setwd(homeDir)
 
 if(WRITE){
-  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
+  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = "\t", append= TRUE, col.names = FALSE)          
   
 }

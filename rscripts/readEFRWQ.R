@@ -35,7 +35,7 @@ for(i in 1:nrow(shortList)){
   }
   temp$sheet_id <- shortList$sheet_id[i]
   xlcFreeMemory()
-  print(dim(temp))
+#  print(dim(temp))
   dimCheck <- dimCheck + nrow(temp)
   batch8 <- merge(batch8, temp, all = TRUE)
   
@@ -57,8 +57,8 @@ for(i in 1:nrow(shortList)){
   }
   temp$sheet_id <- shortList$sheet_id[i]
   xlcFreeMemory()
-  print(dim(temp))
-  print(tail(temp))
+#  print(dim(temp))
+#  print(tail(temp))
   dimCheck <- dimCheck + nrow(temp)
   batch8 <- merge(batch8, temp, all = TRUE)
   
@@ -82,7 +82,7 @@ for(i in 1:nrow(shortList)){
   }
   temp$sheet_id <- shortList$sheet_id[i]
   xlcFreeMemory()
-  print(dim(temp))
+ # print(dim(temp))
   dimCheck <- dimCheck + nrow(temp)
   batch8 <- merge(batch8, temp, all = TRUE)
   
@@ -141,6 +141,6 @@ setwd(homeDir)
 
 
 if(WRITE){
-  write.table(wq_dat, "processed_data/water_quality.csv", sep = ",", row.names=FALSE, col.names=FALSE, append = TRUE)                    
+  write.table(wq_dat, "processed_data/water_quality.csv", sep = "\t", row.names=FALSE, col.names=FALSE, append = TRUE)                    
             
 }

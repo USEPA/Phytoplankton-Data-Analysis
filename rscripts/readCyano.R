@@ -11,13 +11,10 @@ OUTsub2 <- OUT[id  & !OUT$processed, ]
 OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
 OUT$script[OUT$full_file_name %in% OUTsub2$full_file_name] <- "readCyano.R"
 
-
 OUTsub2$hab <- grepl("HAB", OUTsub2$full_file_name, ignore.case=TRUE)
 
 dimCheck <- 0
 for(i in 1:nrow(OUTsub2)){
-
-#for(i in 1:10){  
   
   err <-    try( wb     <- loadWorkbook(OUTsub2$full_file_name[i]) )
   if(class(err) == "try-error") print( "File Missing") 
@@ -62,9 +59,21 @@ algae <- data.frame(ID = AAA$sample_id,
                      class = NA,
                      hab = AAA$hab,
                      sheet_id = AAA$sheet_id)
-setwd(homeDir)
 
+algae$cell_per_l <- gsub(pattern=",",replacement="", algae$cell_per_l) 
+
+## fix date
+ii <- algae$ID == "2TARALG01020121161540000"
+algae$date[ii] <- "20121106"
+
+algae$cell_per_l <- as.numeric(algae$cell_per_l)
+algae$BV.um3.L <- NA
+setwd(homeDir)
+algae$taxa <- gsub(pattern='"', replacement = "", algae$taxa)
+algae$taxa <- gsub(pattern="'", replacement = "", algae$taxa)
+
+chunck_check(algae)
 if(WRITE){
-  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
+  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = "\t", append= TRUE, col.names = FALSE)          
   
 }

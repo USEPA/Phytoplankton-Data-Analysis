@@ -12,9 +12,10 @@ if(class(err) == "try-error"){ print("Error")}
 
 AAA  <- readWorksheet(wb, sheet=OUTsub2$sheet[1], header=TRUE)
 AAA$iCheck <- 1
+AAA$sheet_id  <- OUTsub2$sheet_id[1]
 dimCheck <- nrow(AAA)
 ### lesson learned today.  You can't merge a NULL to a data.frame and get anything returned.
-print(dimCheck)
+
 for( i in 2:nrow(OUTsub2)){
   xlcFreeMemory()
   err <-    try( wb     <- loadWorkbook(OUTsub2$full_file_name[i]) )
@@ -43,13 +44,17 @@ algae <- data.frame(ID = ID,
                     depth_ft = substr(ID,22,24 ),
                     date = substr(ID, start=10, stop=17),
                     taxa = AAA$Taxa,
-                    cell_per_l = AAA$Density....l.,
-                    BV.um3.L = AAA$Biovolume..um3.L.,  ## how can I be certain about these units?
+                    cell_per_l = as.numeric(AAA$Density....l.),
+                    BV.um3.L = as.numeric(AAA$Biovolume..um3.L.),  ## how can I be certain about these units?
                     class = NA,
                     hab = FALSE,
                     sheet_id = AAA$sheet_id)
 setwd(homeDir)
+algae$taxa <- gsub(pattern='"', replacement = "", algae$taxa)
+algae$taxa <- gsub(pattern="'", replacement = "", algae$taxa)
+
+chunck_check(algae)
 if(WRITE){
-  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
+  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = "\t", append= TRUE, col.names = FALSE)          
  
 }

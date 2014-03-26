@@ -1,5 +1,5 @@
 ### use objects from readData
-### check 0307
+### check 0307; 0325
 
 ### directory G
 setwd("originalData/algae/EFR Phytoplankton Data/")
@@ -146,11 +146,16 @@ algae1 <- data.frame(ID = BBB$ID,
 
 algae <- rbind(algae1, algae0)
 
+algae$taxa <- gsub(pattern='"', replacement = "", algae$taxa)
+algae$taxa <- gsub(pattern="'", replacement = "", algae$taxa)
+
+chunck_check(algae)
+
 setwd(homeDir)
 if(WRITE){
-write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",")      
+write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = "\t")      
 print(dim(WQ_all))
 print(head(WQ_all))
 
-write.table(WQ_all, "processed_data/water_quality.csv", sep = ",", row.names=FALSE)                    
+write.table(WQ_all, "processed_data/water_quality.csv", sep = "\t", row.names=FALSE)                    
 }  

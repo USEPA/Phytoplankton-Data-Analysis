@@ -17,6 +17,7 @@ if(class(err) == "try-error"){ print("Error")}
 
 AAA  <- readWorksheet(wb, sheet=OUTsub2$sheet[1], header=TRUE)
 AAA$iCheck <- 1
+AAA$sheet_id <- OUTsub2$sheet_id[1]
 dimCheck <- nrow(AAA)
 ### lesson learned today.  You can't merge a NULL to a data.frame and get anything returned.
 print(dimCheck)
@@ -42,6 +43,14 @@ if(!  is.numeric(temp$Date.Analyzed) ){
 
 if(dimCheck != nrow(AAA)) warning("Check your merge.")
 
+### rearrange digts
+ii <- !grepl("^2", AAA$Sample.Date)
+
+AAA$Sample.Date[ii] <- paste(substr(AAA$Sample.Date[ii] , 5,8) ,
+                             substr(AAA$Sample.Date[ii] , 1,2),
+                             substr(AAA$Sample.Date[ii] , 3,4),
+                             sep = "")
+
 ID <- paste(AAA$Location, AAA$Sample.Date, 
             formatC(AAA$Sample.Time, width = 4, flag = "0"),
             formatC(AAA$Sample.Depth, width = 3, flag = "0"), sep = "")
@@ -61,9 +70,14 @@ algae <- data.frame(ID = ID,
                     class = NA,
                     hab = FALSE,
                     sheet_id = AAA$sheet_id)
+
+
+chunck_check(algae)
 setwd(homeDir)
+
+
 if(WRITE){
-  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
+  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = "\t", append= TRUE, col.names = FALSE)          
   
 }
 

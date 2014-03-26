@@ -24,15 +24,14 @@ for( j in 1:length(files)){
   err <-    try( wb     <- loadWorkbook(files[j]) )
   if(class(err) == "try-error") print( "File Missing") 
   # 
-  sheets <- getSheets(wb)
+  OUTsub3 <- subset(OUTsub2, full_file_name == files[j] )
   
-  sheets <- sheets[nchar(sheets)==3] ## only use 3 
-for(i in 1:length(sheets)){
-   print(i)
-  temp <- readWorksheet(wb, sheet=sheets[i], header = FALSE,startCol=1, endCol=9 )
+for(i in 1:nrow(OUTsub3)){
+  #  print(i)
+  temp <- readWorksheet(wb, sheet=OUTsub3$sheet[i], header = FALSE,startCol=1, endCol=9, useCachedValues=TRUE  )
   temp <- temp[!is.na(temp[,1]), ]
   
-   temp$sheet_id <- OUTsub2$sheet_id[i]
+   temp$sheet_id <- OUTsub3$sheet_id[i]
   dimCheck <- nrow(temp) + dimCheck
 if(i == 1 & j == 1){AAA <- temp} else{
   AAA <- merge(AAA, temp, all = TRUE)
@@ -60,6 +59,9 @@ algae <- data.frame(ID = ID,
 
 
 #### pick up other files in directory, copied elsewhere
+ii <- as.Date(algae$date, "%Y%m%d") > "2014-03-23"
+# algae$date[ii] <- "20070820"; drop - incorrect date
+algae <- algae[!ii, ]
 
 id <- OUT$full_file_name == "Drew data/h/phytodata2005.xls"
 OUT$processed[id] <- TRUE
@@ -114,14 +116,21 @@ algae2 <- data.frame(ID = ID,
                      sheet_id = temp$sheet_id )
 
 
+ii <- as.Date(algae2$date, "%Y%m%d") > "2014-03-23"
+# algae$date[ii] <- "20070820"; drop - incorrect date
+algae2 <- algae2[!ii, ]
 
+chunck_check(algae)
+chunck_check(algae1)
+chunck_check(algae2)
 
 algae0 <- rbind(algae2, algae1, algae)
 
+grep(pattern="'", algae$taxa)
 setwd(homeDir)
 
 if(WRITE){
-  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
+  write.table(algae0, "processed_data/algae.csv", row.names=FALSE, sep = "\t", append= TRUE, col.names = FALSE)          
   
 }
 
