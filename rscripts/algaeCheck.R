@@ -1,13 +1,31 @@
 ### script to clean algae file.  Remove non-uniques
 library(plyr)
+library(stringr)
+library(XLConnect)
 
-algae_dat <- read.table(file="processed_data/algae_20140318.csv", sep = ",", header = TRUE, fill = TRUE, as.is = TRUE)
-algae_dat <- read.table(file="processed_data/test.csv", sep = ",", header = TRUE, fill = TRUE, as.is = TRUE)
+#algae_dat <- read.table(file="processed_data/algae_20140325.csv", sep = ",", header = TRUE, fill = TRUE, as.is = TRUE)
+algae_dat <- read.delim(file="processed_data/algae_20140326.csv", sep = "\t", header = TRUE, fill = TRUE, as.is = TRUE, comment.char="")
+
+dim(algae_dat)
+
+x <- nchar( algae_dat$taxa)
+
+head( algae_dat[ order(x), ])
+
+#x <- unique(algae_dat$taxa)
+test <<- algae_dat[ 99475:99480, ]
+str_replace_all(test$taxa, "[^[:space:]^[:alnum:]^[#]]+", "") 
+
+algae_dat$taxa <- str_replace_all(algae_dat$taxa, "[^[:space:]^[:alnum:]^[#]]+", "")  ### strip non
+
+x <- nchar(algae_dat$taxa)
+temp <- algae_dat[order(x), ]
+
+length(unique(algae_dat$taxa))
+#z <- data.frame( old = x, new = y)
 
 info <- read.table(file="processed_data/summary.status0319.csv", sep = ",", header = TRUE, fill = TRUE, as.is = TRUE)
 info$sheet_id <- as.numeric(info$sheet_id)
-
-algae_dat <- algae_dat[ -210022, ]  ### track down row. Contains 'Chrysophyta \A'
 
 numClass <- c("depth_ft", "sheet_id", "cell_per_l", "BV.um3.L")
 
@@ -112,4 +130,23 @@ temp <- algae_dat[iii,]
 temp$qual_replicate <- "Q"
 algae_good <- rbind(algae_good, temp)
 
-write.table( algae_good, paste("processed_data/cleaned_algae_", format(Sys.time(), "%Y%m%d"), ".csv", sep = ""), sep = ",", row.names=FALSE )
+### check date 
+
+test <- as.Date(x=as.character(algae_good$date), format = "%Y%m%d")
+range(test)
+
+### check length of tax strings
+
+i <- nchar(algae_good$taxa) > 50
+
+
+write.table( algae_good, paste("processed_data/cleaned_algae_", format(Sys.time(), "%Y%m%d"), ".txt", sep = ""), sep="\t", row.names=FALSE)
+
+check <- read.table("processed_data/cleaned_algae_20140326.txt", as.is=TRUE, header = TRUE, sep = ";")
+
+check2 <- read.delim("processed_data/cleaned_algae_20140326.txt", as.is=TRUE, header = TRUE)
+dim(check2)
+
+i <- nchar(check$taxa) > 50
+
+
