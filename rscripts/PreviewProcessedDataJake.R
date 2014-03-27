@@ -6,28 +6,32 @@
 
 # READ IN AND FORMAT algae.csv FROM processed_data FOLDER-------------------------
 # Reading from processed_data folder
-  algae <- read.table("processed_data/cleaned_algae_20140324.csv", sep = ",", header = TRUE, as.is = TRUE, na.strings=c("", "NA"))
+  algae <- read.delim("processed_data/cleaned_algae_20140326.txt", as.is=TRUE, header = TRUE)
   head(algae)
   str(algae)
 
 # Review number of samples, lakes, dates, etc
-  table(algae$date)  # Contains a number of incorrectly formatted dates
-  table(algae$lake)  # A few strange values. grr=GRR, lake is incorrect.  Others are from District 3
-  algae <- algae[algae$lake != 'lake',]  # Remove 'lake' observation
+  table(algae$date)  # Formatted correctly. Still need older dates + 2013 + 2014
+  table(algae$lake)  # grr=GRR.  Unusual lake names from District 3
   algae[algae$lake == "grr", "lake"] = "GRR"  # Rename "grr"
   unique(algae$station)  # Still need to consult with Jade on a few of these
   unique(algae$depth_ft) # Good
   #strip leading and trailing spaces in taxa  
     algae$taxa <- gsub("^\\s+|\\s+$", "", algae$taxa)
-  unique(algae$taxa)
-  unique(algae$class)  # Some numbers in "class" field
-  unique(algae$hab)  # Some numbers in "hab" field
-  unique(algae$qual_replicate)  # Looks good, Q or R
+  unique(algae$taxa)  # Good
+  unique(algae$class)  # Good
+  unique(algae$hab)  # Good
+  unique(algae$qual_replicate)  # Looks good, NA, Q, or R
 
 # Revisit after above issues have been resolved
-  #algae$rdate <- as.Date(as.character(algae$date), format = '%Y%m%d')
-  #table(algae$lake, substr(algae$date, 1,4))  # data from all lakes in 92, only EFR >92
-  #table(algae$rdate, algae$hab)  # Only two dates of HAB sampling entered
+  algae$rdate <- as.Date(as.character(algae$date), format = '%Y%m%d')
+  algae$year <- as.numeric(substr(algae$date, 1,4))
+  date.yr.lk <- aggregate(algae$rdate, by=list(lake=algae$lake, year=algae$year), FUN=function(X1) {length(unique(X1))})
+  date.yr.lk <- dcast(date.yr.lk, lake ~ year, value.var="x")
+  date.yr.lk[is.na(date.yr.lk)] = 0
+  date.yr.lk$total <- apply(subset(date.yr.lk,  select = -c(lake)), MARGIN=1, FUN=sum)
+  table(algae$lake, substr(algae$date, 1,4))  # 
+  table(algae$rdate, algae$hab)  # Only 2012 HAB sampling entered
 
 # POPULATE 'CLASS' FIELD----------------------------------------
   unique(algae$class)  # Not filled out yet
@@ -43,11 +47,10 @@
   # Merge clas with phytoplankton data  
     ld.algae <- merge(algae, clas, by = 'taxa', all=T)  # 'ld' for Louisville District
     str(ld.algae)  
-  # Pull out algal taxa w/out a corresponding slass ID from Lisa
-    no.class <- unique(ld[is.na(ld$class) & !is.na(ld$taxa), 'taxa' ])  # Where Class is NA, but taxa is known.  Unique to reduce redundancies.  Send to Lisa for updating.
+  # Pull out algal taxa w/out a corresponding class ID from Lisa
+    no.class <- unique(ld.algae[is.na(ld.algae$class) & !is.na(ld.algae$taxa), 'taxa' ])  # Where Class is NA, but taxa is known.  Unique to reduce redundancies.  Send to Lisa for updating.
     no.class[order(no.class)]  # Only a few, very god.
-    #write.table(no.class, file = file.path(filePath,
-    #'research/EPA/East Fork Reservoir/algae/no.class.txt'), row.names=F)
+    write.table(no.class, file = "output/no.class.txt", row.names=F)
 
 # A FEW VERY BASIC FIGURES-----------------------------------------
   # EFR
