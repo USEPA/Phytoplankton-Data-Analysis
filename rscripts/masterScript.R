@@ -123,8 +123,8 @@ source("rscripts/readCyano.R")
 print(sum(OUT$processed))
 
 ## just water quality data
-# source("rscripts/readEFRWQ.R")
-# print(sum(OUT$processed))
+ source("rscripts/readEFRWQ.R")
+ print(sum(OUT$processed))
 
 source("rscripts/readAlgal.R")
 print(sum(OUT$processed))
@@ -151,7 +151,7 @@ print(sum(OUT$processed))
 xxx <- subset(OUT, ! processed)
 View(xxx)
 
-write.table(OUT, "processed_data/summary.status0326.csv", row.names = FALSE, sep = ",")
+write.table(OUT, paste("processed_data/summaryStatus_", format(Sys.time(), "%Y%m%d"), ".csv", sep = ""), row.names = FALSE, sep = ",")
 xx <- paste("processed_data/algae_", format(Sys.time(), "%Y%m%d"), ".csv", sep = "")
 cmd <- paste('cp processed_data/algae.csv', xx )
 

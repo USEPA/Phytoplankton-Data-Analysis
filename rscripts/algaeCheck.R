@@ -4,27 +4,25 @@ library(stringr)
 library(XLConnect)
 
 #algae_dat <- read.table(file="processed_data/algae_20140325.csv", sep = ",", header = TRUE, fill = TRUE, as.is = TRUE)
-algae_dat <- read.delim(file="processed_data/algae_20140326.csv", sep = "\t", header = TRUE, fill = TRUE, as.is = TRUE, comment.char="")
+algae_dat <- read.delim(file="processed_data/algae_20140402.csv", sep = "\t", header = TRUE, fill = TRUE, as.is = TRUE, comment.char="")
 
 dim(algae_dat)
 
-x <- nchar( algae_dat$taxa)
+# x <- nchar( algae_dat$taxa)
+# 
+# head( algae_dat[ order(x, decreasing=TRUE), ])
+# 
+# #x <- unique(algae_dat$taxa)
+# test <<- algae_dat[ 99475:99480, ]
+# str_replace_all(test$taxa, "[^[:space:]^[:alnum:]^[#]]+", "") 
+# 
+# algae_dat$taxa <- str_replace_all(algae_dat$taxa, "[^[:space:]^[:alnum:]^[#]]+", "")  ### strip non
 
-head( algae_dat[ order(x), ])
 
-#x <- unique(algae_dat$taxa)
-test <<- algae_dat[ 99475:99480, ]
-str_replace_all(test$taxa, "[^[:space:]^[:alnum:]^[#]]+", "") 
-
-algae_dat$taxa <- str_replace_all(algae_dat$taxa, "[^[:space:]^[:alnum:]^[#]]+", "")  ### strip non
-
-x <- nchar(algae_dat$taxa)
-temp <- algae_dat[order(x), ]
-
-length(unique(algae_dat$taxa))
+# length(unique(algae_dat$taxa))
 #z <- data.frame( old = x, new = y)
 
-info <- read.table(file="processed_data/summary.status0319.csv", sep = ",", header = TRUE, fill = TRUE, as.is = TRUE)
+info <- read.table(file="processed_data/summary.status0226.csv", sep = ",", header = TRUE, fill = TRUE, as.is = TRUE)
 info$sheet_id <- as.numeric(info$sheet_id)
 
 numClass <- c("depth_ft", "sheet_id", "cell_per_l", "BV.um3.L")
@@ -140,13 +138,15 @@ range(test)
 i <- nchar(algae_good$taxa) > 50
 
 
-write.table( algae_good, paste("processed_data/cleaned_algae_", format(Sys.time(), "%Y%m%d"), ".txt", sep = ""), sep="\t", row.names=FALSE)
 
-check <- read.table("processed_data/cleaned_algae_20140326.txt", as.is=TRUE, header = TRUE, sep = ";")
+algae_good$lake<- sub(pattern="grr",replacement="GRR", x=algae_good$lake)
+
+
+write.table( algae_good[,-c(13,14) ], paste("processed_data/cleaned_algae_", format(Sys.time(), "%Y%m%d"), ".txt", sep = ""), sep="\t", row.names=FALSE)
+
 
 check2 <- read.delim("processed_data/cleaned_algae_20140326.txt", as.is=TRUE, header = TRUE)
-dim(check2)
 
-i <- nchar(check$taxa) > 50
+dim(check2)
 
 
