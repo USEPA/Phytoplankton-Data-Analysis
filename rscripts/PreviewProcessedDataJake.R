@@ -6,14 +6,13 @@
 
 # READ IN AND FORMAT algae.csv FROM processed_data FOLDER-------------------------
 # Reading from processed_data folder
-  algae <- read.delim("processed_data/cleaned_algae_20140326.txt", as.is=TRUE, header = TRUE)
+  algae <- read.delim("processed_data/cleaned_algae_20140402.txt", as.is=TRUE, header = TRUE)
   head(algae)
   str(algae)
 
 # Review number of samples, lakes, dates, etc
-  table(algae$date)  # Formatted correctly. Still need older dates + 2013 + 2014
-  table(algae$lake)  # grr=GRR.  Unusual lake names from District 3
-  algae[algae$lake == "grr", "lake"] = "GRR"  # Rename "grr"
+  table(algae$date)  # Formatted correctly. Still need newer dates + 2013 + 2014
+  table(algae$lake)  # Unusual lake names from District 3
   unique(algae$station)  # Still need to consult with Jade on a few of these
   unique(algae$depth_ft) # Good
   #strip leading and trailing spaces in taxa  
@@ -28,10 +27,12 @@
   algae$year <- as.numeric(substr(algae$date, 1,4))
   date.yr.lk <- aggregate(algae$rdate, by=list(lake=algae$lake, year=algae$year), FUN=function(X1) {length(unique(X1))})
   date.yr.lk <- dcast(date.yr.lk, lake ~ year, value.var="x")
-  date.yr.lk[is.na(date.yr.lk)] = 0
-  date.yr.lk$total <- apply(subset(date.yr.lk,  select = -c(lake)), MARGIN=1, FUN=sum)
-  table(algae$lake, substr(algae$date, 1,4))  # 
+  date.yr.lk[is.na(date.yr.lk)] = 0  # If not samples were collected, set equal to 0
+  date.yr.lk$total <- apply(subset(date.yr.lk,  select = -c(lake)), MARGIN=1, FUN=sum)  # Calculate total per lake
+  date.yr.lk
   table(algae$rdate, algae$hab)  # Only 2012 HAB sampling entered
+  algae$district <- substr(algae$ID, 1,1)
+  unique(paste(algae$district, algae$lake))[order(unique(paste(algae$district, algae$lake)))]
 
 # POPULATE 'CLASS' FIELD----------------------------------------
   unique(algae$class)  # Not filled out yet
