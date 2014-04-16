@@ -60,15 +60,13 @@ WQ_all <- cbind(WQ_all, result_convert(WQ_all$result))
 
 WQ_all <- subset(WQ_all, !is.na(result))
 WQ_all$ID <- paste(WQ_all$location, WQ_all$sample_date, WQ_all$sample_time, WQ_all$sample_depth, sep = "")
+
 ### table WB
-
-
 #### look at HAB files
 
 OUTsub2 <- OUTsub[grepl("HAB", OUTsub$file) & grepl("Cyanobacterial.Analysis.Report", OUTsub$sheetNames),  ]
 OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
 OUT$script[OUT$full_file_name %in% OUTsub2$full_file_name] <- "readDirG.R"
-
 
 AAA <- NULL
 
@@ -154,8 +152,8 @@ chunck_check(algae)
 setwd(homeDir)
 if(WRITE){
 write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = "\t")      
-print(dim(WQ_all))
-print(head(WQ_all))
+#print(dim(WQ_all))
+#print(head(WQ_all))
 
 write.table(WQ_all, "processed_data/water_quality.csv", sep = "\t", row.names=FALSE)                    
 }  

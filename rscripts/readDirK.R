@@ -95,7 +95,7 @@ for(i in 1:nrow(OUTsub2)){
   
   temp <- readWorksheet(wb, sheet=OUTsub2$sheet[i])
   
-  print(dim(temp))
+ # print(dim(temp))
   if(nrow(temp)==0)next
   temp$sheet_id <- OUTsub2$sheet_id[i]
   AAA <- rbind( AAA, temp)

@@ -106,19 +106,23 @@ OUT$processed[id] <- TRUE
 
 OUT$script[OUT$processed] <- "Not Processed"
 
-
+## contains wq data
 source("rscripts/readDirG.R")
 print(sum(OUT$processed))
 
+## contains wq data
 source("rscripts/readDirK.R")
 print(sum(OUT$processed))
 
+### contains wq data.
 source("rscripts/readDirQ.R")
 print(sum(OUT$processed))
 
+### no wq
 source("rscripts/readDASLER.R")
 print(sum(OUT$processed))
 
+## no wq
 source("rscripts/readCyano.R")
 print(sum(OUT$processed))
 
@@ -126,24 +130,33 @@ print(sum(OUT$processed))
  source("rscripts/readEFRWQ.R")
  print(sum(OUT$processed))
 
+## no water quality
 source("rscripts/readAlgal.R")
 print(sum(OUT$processed))
 
+
+
+### originally not written to file or saved.
 source("rscripts/readEDD.R")
 print(sum(OUT$processed))
 
+### no wq
 source("rscripts/readDirL.R")
 print(sum(OUT$processed))
 
+## no wq
 source("rscripts/readRawData.R")
 print(sum(OUT$processed))
 
+## no wq
 source("rscripts/readSample.R")
 print(sum(OUT$processed))
 
+### just algae
 source("rscripts/readEFR.R")
 print(sum(OUT$processed))
 
+### all algae
 source("rscripts/readMisc.R")
 print(sum(OUT$processed))
 
