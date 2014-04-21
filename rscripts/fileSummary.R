@@ -12,9 +12,12 @@ homeDir <- "/Users/mattpocernich/repos/epa_2013/2013/TO 0016/analysis/Phytoplank
 
 setwd("originalData/algae/EFR Phytoplankton Data/")
 
-files  <- dir( recursive=TRUE,include.dirs=TRUE)
+filesAll <- files  <- dir( recursive=TRUE,include.dirs=TRUE)
 files  <- files[grepl("xls",x=files,ignore.case=TRUE)]  ## full path
 file_name <- NULL
+
+files.txt  <- files[grepl("txt$",x=filesAll,ignore.case=TRUE)]  ## full path
+
 
 xx <- strsplit(files, "/")
 yy <- do.call("rbind", xx)
