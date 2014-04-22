@@ -134,8 +134,6 @@ print(sum(OUT$processed))
 source("rscripts/readAlgal.R")
 print(sum(OUT$processed))
 
-
-
 ### originally not written to file or saved.
 source("rscripts/readEDD.R")
 print(sum(OUT$processed))
@@ -158,6 +156,9 @@ print(sum(OUT$processed))
 
 ### all algae
 source("rscripts/readMisc.R")
+print(sum(OUT$processed))
+
+source("rscripts/readDBF.R")
 print(sum(OUT$processed))
 
 
