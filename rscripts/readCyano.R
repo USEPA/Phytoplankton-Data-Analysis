@@ -57,7 +57,7 @@ algae <- data.frame(ID = AAA$sample_id,
                      cell_per_l = AAA$Concentration..cells.mL.,
                      BV.um3.L = NA,  ## how can I be certain about these units?
                      class = NA,
-                     hab = AAA$hab,
+                     hab = TRUE,   ### hard coded HAB, see issue 
                      sheet_id = AAA$sheet_id)
 
 algae$cell_per_l <- gsub(pattern=",",replacement="", algae$cell_per_l) 
