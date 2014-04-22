@@ -48,10 +48,35 @@
   # Merge clas with phytoplankton data  
     ld.algae <- merge(algae, clas, by = 'taxa', all=T)  # 'ld' for Louisville District
     str(ld.algae)  
+    ld.algae$Bio.per.cell <- with(ld.algae, BV.um3.L / cell_per_l)
   # Pull out algal taxa w/out a corresponding class ID from Lisa
     no.class <- unique(ld.algae[is.na(ld.algae$class) & !is.na(ld.algae$taxa), 'taxa' ])  # Where Class is NA, but taxa is known.  Unique to reduce redundancies.  Send to Lisa for updating.
     no.class[order(no.class)]  # Only a few, very god.
     write.table(no.class, file = "output/no.class.txt", row.names=F)
+
+# CONVERT BLUE-GREEN CELL COUNTS TO BIOVOLUME---------------------
+  ld.algae[ld.algae$hab == TRUE & is.na(ld.algae$class), "class"] <- "Blue-green"  # Some hab data didn't have the class field populated
+  needBio <- unique(ld.algae[ld.algae$hab == TRUE, c("lake", "rdate", "taxa")])  # Pull out unique taxa per lake x date.  Doesn't account for depth x station
+  needBio <- needBio[!apply(needBio, FUN=function(x) all(is.na(x)), MARGIN=1),]  # Eliminate rows with all NAs
+  needBioEFR <- unique(needBio[needBio$lake == "EFR", "taxa"])  # Pull out taxa from EFR that need biovolume
+  bioSourceEFR <- ld.algae[ld.algae$lake == "EFR" &
+                             (ld.algae$taxa %in% needBioEFR) & 
+                             ld.algae$hab != TRUE & 
+                             !is.na(ld.algae$taxa), ]  # Data for taxa that have biovolume
+
+
+# Revisit after issue #26 has been resolved.
+  for (i in 1:length(unique(bioSourceEFR$taxa))) { 
+    pdf(file = paste("output/", "EFR.", unique(bioSourceEFR$taxa)[i], ".pdf", sep=""))
+    try(print(
+      ggplot(bioSourceEFR[bioSourceEFR$taxa == unique(bioSourceEFR$taxa)[i],], aes(rdate, Bio.per.cell)) + 
+        geom_point() + 
+        ylab("Biovolume per cell (um3)") +
+        ggtitle(paste("EFR:", unique(bioSourceEFR$taxa)[i]))),
+        silent=TRUE
+    )
+    dev.off()
+  }
 
 # A FEW VERY BASIC FIGURES-----------------------------------------
   # EFR
