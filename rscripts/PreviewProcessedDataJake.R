@@ -7,38 +7,44 @@
 
 # READ IN AND FORMAT algae.csv FROM processed_data FOLDER-------------------------
 # Reading from processed_data folder
-  algae <- read.delim("processed_data/cleaned_algae_20140422.txt", as.is=TRUE, header = TRUE)
+  algae <- read.delim("processed_data/cleaned_algae_20140423.txt", as.is=TRUE, header = TRUE)
   head(algae)
   str(algae)
 
 # Review number of samples, lakes, dates, etc
-  table(algae$date)  # Formatted correctly. Still need newer dates + 2013 + 2014
+  table(algae$date)  # Formatted correctly.
   table(algae$lake)  # Unusual lake names from District 3
   unique(algae$station)  # Still need to consult with Jade on a few of these
   unique(algae$depth_ft) # Good
 
+# Add district
+  district2 <- read.xls("originalData/algae/FY13WQSampleCollectionSiteLocations.xlsx", 
+                    as.is=TRUE)  # Read in established sites
+  district2$id <- district2$Buckhorn  # Format
+  str(district2)
+  district2 <- district2[, "id"]  # Format
+  district2 <- district2[!(district2 %in% "ID")]  # Eliminate "ID" form lake.site name
+  district2 <- district2[!grepl(pattern=":", x=district2)]  # Eliminate lake names
+  district2 <- data.frame(lake.station = substr(district2,start=2, stop=length(nchar(district2))),
+                          lake = substr(district2, 2, 4),
+                          district = as.integer(substr(district2, 1,1)))
+  district2[,c("lake.station", "lake")] <- apply(X=district2[,c("lake.station", "lake")], MARGIN=2, FUN="as.character")
+  district3 <-  read.xls("originalData/algae/FY13WQSampleCollectionSiteLocations.xlsx", 
+                                       sheet="district 3", as.is=TRUE)  # Read in district3 lakes 
+  algae$district <- ifelse(algae$lake %in% district2$lake, 2,
+                           ifelse(algae$lake %in% district3$lake, 3, NA))
+
 # Analysis of anamolous site names
   algae$lake.station <- paste(algae$lake, algae$station, sep="")  # Create new id
-  sites <- read.xls("originalData/algae/FY13WQSampleCollectionSiteLocations.xlsx", 
-                    as.is=TRUE)  # Read in established sites
-  sites$id <- sites$Buckhorn  # Format
-  str(sites)
-  sites <- sites[, "id"]  # Format
-  sites <- sites[!(sites %in% "ID")]  # Eliminate ID
-  sites <- sites[!grepl(pattern=":", x=sites)]  # Eliminate lake names
-  sites <- substr(sites,start=2, stop=length(nchar(sites)))  # Eliminate District
-  district3 <- read.xls("originalData/algae/FY13WQSampleCollectionSiteLocations.xlsx", 
-                        sheet="district 3", as.is=TRUE)  # Readin district3 lakes
-  
-  anamolous <- algae[!(algae$lake.station %in% sites), 
+  anamolous <- algae[!(algae$lake.station %in% district2$lake.station), 
                      c("date", "lake.station", "hab", "sheet_id")]  # extract lake.station combo not in official list
   anamolous <- anamolous[!(substr(x=anamolous$lake.station, start=1, stop=3) %in% district3$lake),]  # remove district3
   anamolous <- anamolous[!(duplicated(anamolous$lake.station)), 
                          c("lake.station", "date", "hab", "sheet_id") ]  # Remove duplicated records
   anamolous <- anamolous[order(anamolous$lake.station),]  # Order
 
-#strip leading and trailing spaces in taxa  
-    algae$taxa <- gsub("^\\s+|\\s+$", "", algae$taxa)
+# Strip leading and trailing spaces in taxa  
+  algae$taxa <- gsub("^\\s+|\\s+$", "", algae$taxa)
   unique(algae$taxa)  # Good
   unique(algae$class)  # Good
   unique(algae$hab)  # Good
@@ -49,12 +55,15 @@
   algae$year <- as.numeric(substr(algae$date, 1,4))
   date.yr.lk <- aggregate(algae$rdate, by=list(lake=algae$lake, year=algae$year), FUN=function(X1) {length(unique(X1))})
   date.yr.lk <- dcast(date.yr.lk, lake ~ year, value.var="x")
+  date.yr.lk$total <- apply(subset(date.yr.lk,  select = -c(lake)), MARGIN=1, FUN=sum, na.rm=T)  # Calculate total per lake
+  date.yr.lk$district <- ifelse(date.yr.lk$lake %in% district2$lake, 2,
+                                ifelse(date.yr.lk$lake %in% district3$lake, 3, NA))  # Add district
+  year.range <- min(as.numeric(names(date.yr.lk)), na.rm=T):2014  # Define range of years included in data
+  missing.years <- year.range[!(year.range %in% as.numeric(names(date.yr.lk)))]  # Define missing years
+  date.yr.lk[,as.character(missing.years)] <- NA  # Add columns for missing years
+  date.yr.lk <- date.yr.lk[, c("district", "lake", as.character(sort(as.numeric(names(date.yr.lk)))), "total")]  # reorder columns
+  date.yr.lk <- date.yr.lk[with(date.yr.lk, order(district, lake)), ]  # reorder rows
   date.yr.lk[is.na(date.yr.lk)] = 0  # If not samples were collected, set equal to 0
-  date.yr.lk$total <- apply(subset(date.yr.lk,  select = -c(lake)), MARGIN=1, FUN=sum)  # Calculate total per lake
-  date.yr.lk
-  table(algae$rdate, algae$hab)  # Only 2012 HAB sampling entered
-  algae$district <- substr(algae$ID, 1,1)
-  unique(paste(algae$district, algae$lake))[order(unique(paste(algae$district, algae$lake)))]
 
 # POPULATE 'CLASS' FIELD----------------------------------------
   unique(algae$class)  # Not filled out yet
