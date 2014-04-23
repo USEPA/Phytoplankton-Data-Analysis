@@ -3,10 +3,11 @@
 # LIBRARIES-----------------------------------------------------
   library(ggplot2)
   library(reshape2)
+  library(gdata)
 
 # READ IN AND FORMAT algae.csv FROM processed_data FOLDER-------------------------
 # Reading from processed_data folder
-  algae <- read.delim("processed_data/cleaned_algae_20140402.txt", as.is=TRUE, header = TRUE)
+  algae <- read.delim("processed_data/cleaned_algae_20140422.txt", as.is=TRUE, header = TRUE)
   head(algae)
   str(algae)
 
@@ -15,7 +16,28 @@
   table(algae$lake)  # Unusual lake names from District 3
   unique(algae$station)  # Still need to consult with Jade on a few of these
   unique(algae$depth_ft) # Good
-  #strip leading and trailing spaces in taxa  
+
+# Analysis of anamolous site names
+  algae$lake.station <- paste(algae$lake, algae$station, sep="")  # Create new id
+  sites <- read.xls("originalData/algae/FY13WQSampleCollectionSiteLocations.xlsx", 
+                    as.is=TRUE)  # Read in established sites
+  sites$id <- sites$Buckhorn  # Format
+  str(sites)
+  sites <- sites[, "id"]  # Format
+  sites <- sites[!(sites %in% "ID")]  # Eliminate ID
+  sites <- sites[!grepl(pattern=":", x=sites)]  # Eliminate lake names
+  sites <- substr(sites,start=2, stop=length(nchar(sites)))  # Eliminate District
+  district3 <- read.xls("originalData/algae/FY13WQSampleCollectionSiteLocations.xlsx", 
+                        sheet="district 3", as.is=TRUE)  # Readin district3 lakes
+  
+  anamolous <- algae[!(algae$lake.station %in% sites), 
+                     c("date", "lake.station", "hab", "sheet_id")]  # extract lake.station combo not in official list
+  anamolous <- anamolous[!(substr(x=anamolous$lake.station, start=1, stop=3) %in% district3$lake),]  # remove district3
+  anamolous <- anamolous[!(duplicated(anamolous$lake.station)), 
+                         c("lake.station", "date", "hab", "sheet_id") ]  # Remove duplicated records
+  anamolous <- anamolous[order(anamolous$lake.station),]  # Order
+
+#strip leading and trailing spaces in taxa  
     algae$taxa <- gsub("^\\s+|\\s+$", "", algae$taxa)
   unique(algae$taxa)  # Good
   unique(algae$class)  # Good
@@ -243,7 +265,11 @@
   chem.short[chem.short$ID == "2EFR20004201108231100010" & chem.short$analyte ==  "Dissolved Organic Carbon",]
 
 
-
+algae <- read.delim("processed_data/cleaned_algae_20140422.txt", 
+                    as.is=TRUE, 
+                    header = TRUE)
+unique(algae$lake)
+algae[algae$lake == 'grr', 'sheet_id']
 
 
 
