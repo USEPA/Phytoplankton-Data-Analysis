@@ -2,6 +2,7 @@
 
 # LIBRARIES-----------------------------------------------------
   library(ggplot2)
+  library(reshape)
   library(reshape2)
   library(gdata)
 
@@ -64,6 +65,15 @@
   date.yr.lk <- date.yr.lk[, c("district", "lake", as.character(sort(as.numeric(names(date.yr.lk)))), "total")]  # reorder columns
   date.yr.lk <- date.yr.lk[with(date.yr.lk, order(district, lake)), ]  # reorder rows
   date.yr.lk[is.na(date.yr.lk)] = 0  # If not samples were collected, set equal to 0
+  write.table(date.yr.lk, file="processed_data/algaeObservationsSummary.txt")
+  date.yr.lk.melt <- melt(date.yr.lk)
+  # Summary plot of # of sampling dates per year
+    ggplot(date.yr.lk.melt[with(date.yr.lk.melt, variable != "total" & variable != "district"),], aes(value)) +
+    geom_histogram(binwidth = 0.5) +
+    xlab("Number of sampling dates per year")
+  # Summary plot of # of sampling dates per lake for district 2  
+    date.yr.lk$lake <- factor(date.yr.lk$lake, date.yr.lk[order(date.yr.lk$total, decreasing=T), "lake"])  # Needed to order bars
+    ggplot(date.yr.lk, aes(lake, total)) + geom_bar()    
 
 # POPULATE 'CLASS' FIELD----------------------------------------
   unique(algae$class)  # Not filled out yet
@@ -153,7 +163,7 @@
 
 # QUICK GGPLOT FIGURES-------------------------------------
   # Formatting data for x-axis
-    x_breaks <- seq(as.Date('1975/1/1'), as.Date('2014/1/1'), by = '2 year')
+    x_breaks <- seq(as.Date('1986/1/1'), as.Date('2014/1/1'), by = '2 year')
     x_labels <- as.character(x_breaks, format='%Y')
 
   # Biovolume plots
@@ -161,7 +171,7 @@
     ggplot(ld.algae.agg, aes(rdate, t.BV.um3.L)) + geom_point() + ylab('Total Biovolume') + 
       scale_x_date(breaks=x_breaks, labels = x_labels)
     # BG Biovolume      
-      ggplot(ld.algae.agg, aes(rdate, bg.BV.um3.L)) + geom_point() + ylab(expression(paste('BG Biovolume ( ', mu, m^3, '/L)'))) + 
+      ggplot(ld.algae.agg[ld.algae.agg$lake == "EFR",], aes(rdate, bg.BV.um3.L)) + geom_point() + ylab(expression(paste('BG Biovolume ( ', mu, m^3, '/L)'))) + 
         scale_x_date(breaks=x_breaks, labels = x_labels)
     # Proportion BG biovolume
       ggplot(ld.algae.agg, aes(rdate, prop.bg.BV)) + geom_point() + ylab('Proportion BG Biovolume') + 
@@ -172,10 +182,12 @@
     ggplot(ld.algae.agg, aes(rdate, t.cell_per_l)) + geom_point() + ylab('Total Cell count') + 
       scale_x_date(breaks=x_breaks, labels = x_labels) 
   # BG cells  
-    ggplot(ld.algae.agg, aes(rdate, bg.cell_per_l)) + geom_point() + ylab('Blue Green Cell count') + 
-      scale_x_date(breaks=x_breaks, labels = x_labels) 
+  ggplot(ld.algae.agg[ld.algae.agg$lake == "EFR", ], aes(rdate, bg.cell_per_l)) + geom_point() + ylab('Blue Green Cell count') + 
+    scale_x_date(breaks=x_breaks, labels = x_labels) +
+    ggtitle("EFR")
+  
   # Proportion BG cells  
-    ggplot(ld.algae.agg, aes(rdate, prop.bg.cell)) + geom_point() + ylab('Proportion Blue Green by Cell count') + 
+    ggplot(ld.algae.agg[ld.algae.agg$lake == "EFR", ], aes(rdate, prop.bg.cell)) + geom_point() + ylab('Proportion Blue Green by Cell count') + 
       scale_x_date(breaks=x_breaks, labels = x_labels)
 
 # PREVIEW WATER CHEM DATA THAT MATT IMPORTED------------------------------------------
