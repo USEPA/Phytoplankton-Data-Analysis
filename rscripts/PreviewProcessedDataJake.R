@@ -43,7 +43,7 @@
   anamolous <- anamolous[!(duplicated(anamolous$lake.station)), 
                          c("lake.station", "date", "hab", "sheet_id") ]  # Remove duplicated records
   anamolous <- anamolous[order(anamolous$lake.station),]  # Order
-
+  
 # Strip leading and trailing spaces in taxa  
   algae$taxa <- gsub("^\\s+|\\s+$", "", algae$taxa)
   unique(algae$taxa)  # Good
@@ -96,28 +96,53 @@
     write.table(no.class, file = "output/no.class.txt", row.names=F)
 
 # CONVERT BLUE-GREEN CELL COUNTS TO BIOVOLUME---------------------
+# First, identify all taxa that need biovolume (all HAB == TRUE records)
+# Second, identify all examples where these taxa were found in routine monitoring
+# and have biovolumes
   ld.algae[ld.algae$hab == TRUE & is.na(ld.algae$class), "class"] <- "Blue-green"  # Some hab data didn't have the class field populated
   needBio <- unique(ld.algae[ld.algae$hab == TRUE, c("lake", "rdate", "taxa")])  # Pull out unique taxa per lake x date.  Doesn't account for depth x station
   needBio <- needBio[!apply(needBio, FUN=function(x) all(is.na(x)), MARGIN=1),]  # Eliminate rows with all NAs
   needBioEFR <- unique(needBio[needBio$lake == "EFR", "taxa"])  # Pull out taxa from EFR that need biovolume
-  bioSourceEFR <- ld.algae[ld.algae$lake == "EFR" &
-                             (ld.algae$taxa %in% needBioEFR) & 
-                             ld.algae$hab != TRUE & 
-                             !is.na(ld.algae$taxa), ]  # Data for taxa that have biovolume
+  # Logical indicating which lakextaxa combinations in needBio are in the ld.algae where hab=F
+  bioSourceIndex <- paste(ld.algae$lake, ld.algae$taxa, sep="") %in%  # lake x taxa vector from ld.algae
+    paste(needBio$lake, needBio$taxa, sep="")  # lake x taxa vector from needBio
+  bioSource <- ld.algae[bioSourceIndex & ld.algae$hab != TRUE & 
+                          !is.na(ld.algae$taxa),]  # Data for taxa that need biovolume
 
+# Now, see if any of the critters that need biovolume were not included in the monitoring
+# data.
+  notInld.algae.index <- paste(needBio$lake, needBio$taxa, sep="") %in% paste(ld.algae[ld.algae$hab != TRUE, "lake"],
+                                                       ld.algae[ld.algae$hab != TRUE, "taxa"], sep="")
+  # should all = TRUE
+  notInld.algae.index
+  notInld.algae <- needBio[!notInld.algae.index,]  # Which ones are missing
+  unique(with(notInld.algae, paste(lake, rdate, taxa, sep = " ")))
 
-# Revisit after issue #26 has been resolved.
-  for (i in 1:length(unique(bioSourceEFR$taxa))) { 
-    pdf(file = paste("output/", "EFR.", unique(bioSourceEFR$taxa)[i], ".pdf", sep=""))
+# Revisit after issues #26, #27, and #3 have been resolved.
+# Loop to plot the measured per cell biovolumes for each lake x taxa combination
+# included in the HAB data set.
+for(j in 1:length(unique(bioSource$lake))) {
+  lake.j <- unique(bioSource$lake)[j]
+  bioSource.j <- bioSource[bioSource$lake == lake.j,]
+  needBio.j <- needBio[needBio$lake == lake.j,]
+  for (i in 1:length(unique(bioSource.j$taxa))) { 
+    taxa.i <- unique(bioSource.j$taxa)[i]
+    pdf(file = paste("output/Figures/", lake.j, ".", taxa.i, ".pdf", sep=""))
     try(print(
-      ggplot(bioSourceEFR[bioSourceEFR$taxa == unique(bioSourceEFR$taxa)[i],], aes(rdate, Bio.per.cell)) + 
+      ggplot(bioSource.j[bioSource.j$taxa == taxa.i,], aes(rdate, Bio.per.cell)) + 
         geom_point() + 
         ylab("Biovolume per cell (um3)") +
-        ggtitle(paste("EFR:", unique(bioSourceEFR$taxa)[i]))),
+        ggtitle(bquote(atop(paste(.(lake.j), " ", .(taxa.i), sep=""), 
+                            "Red points indicate biovolume is needed"))) +
+        geom_point(data=needBio.j[needBio.j$taxa == taxa.i, ], 
+                   aes(rdate, 0),
+                   color="red")
+    ),
         silent=TRUE
     )
     dev.off()
   }
+}
 
 # A FEW VERY BASIC FIGURES-----------------------------------------
   # EFR
@@ -206,11 +231,16 @@
   table(nchar(chem$ID))  # Most are 24, as expected, but also have 21, 22, and 23.
   table(substr(chem$ID, start=2, stop=4))  # Mostly EFR.  9 lakes represented
   chem$lake <-  substr(chem$ID, start=2, stop=4)
-  chem$station <- substr(chem$ID, start=5, stop=nchar(chem$ID)-15)
-  chem[!is.na(chem$station), c('ID', 'lake', 'station')]  # Some of these have seem to be missing digit for date
-
-# Inspect depth
-  table(chem$sample_depth)  # Looks good
+  table(chem$lake) 
+  table(chem$location)
+  chem$station <- ifelse(nchar(chem$location) <= 6, paste(chem$lake, chem$lake, sep=""),
+                             chem$location)
+  table(chem$station)
+  isLake.StationInDistrict2 <- chem$station %in% paste(2, district2$lake.station, sep="") 
+str(isLake.StationInDistrict2)  
+unique(chem[!isLake.StationInDistrict2, "station"])
+table(chem$location)
+table(chem$sample_depth)  # Looks good
 
 # CENSORED WATER CHEM DATA-------------------------------------------------------------
 # Dual censored values: microcystis
