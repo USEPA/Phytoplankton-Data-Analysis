@@ -35,6 +35,9 @@
   algae$district <- ifelse(algae$lake %in% district2$lake, 2,
                            ifelse(algae$lake %in% district3$lake, 3, NA))
 
+# Are HAB monitoring data coded correctly?
+  algae[!is.na(algae$cell_per_l) & is.na(algae$BV.um3.L), c("hab")]
+
 # Analysis of anamolous site names
   algae$lake.station <- paste(algae$lake, algae$station, sep="")  # Create new id
   anamolous <- algae[!(algae$lake.station %in% district2$lake.station), 
@@ -42,8 +45,19 @@
   anamolous <- anamolous[!(substr(x=anamolous$lake.station, start=1, stop=3) %in% district3$lake),]  # remove district3
   anamolous <- anamolous[!(duplicated(anamolous$lake.station)), 
                          c("lake.station", "date", "hab", "sheet_id") ]  # Remove duplicated records
-  anamolous <- anamolous[order(anamolous$lake.station),]  # Order
-  
+  sheetID <- read.csv("processed_data/summaryStatus_20140423.csv", as.is = TRUE) 
+  anamolous <- merge(anamolous, sheetID[, c("sheet_id", "file")])
+  anamolous.algae <- anamolous[order(anamolous$lake.station),]  # Order
+  write.table(anamolous.algae, file="output/anamolousNamesAlgae.txt", row.name=FALSE)  
+
+# Look at values of algal density and biovolume
+  summary(algae$cell_per_l)
+  algae[algae$cell_per_l < 0, c("lake", "rdate", "ID", "sheet_id", "cell_per_l", "taxa")]
+  algae[algae$cell_per_l == -9999, c("lake", "rdate", "ID", "sheet_id", "cell_per_l", "taxa")]
+  algae[algae$BV.um3.l  < 0, c("lake", "rdate", "ID", "sheet_id", "cell_per_l", "taxa")]
+  algae[algae$cell_per_l == -9999, c("lake", "rdate", "ID", "sheet_id", "cell_per_l", "taxa")]
+
+
 # Strip leading and trailing spaces in taxa  
   algae$taxa <- gsub("^\\s+|\\s+$", "", algae$taxa)
   unique(algae$taxa)  # Good
@@ -74,6 +88,10 @@
   # Summary plot of # of sampling dates per lake for district 2  
     date.yr.lk$lake <- factor(date.yr.lk$lake, date.yr.lk[order(date.yr.lk$total, decreasing=T), "lake"])  # Needed to order bars
     ggplot(date.yr.lk, aes(lake, total)) + geom_bar()    
+
+# TAKE A LOOK AT SOME TAXA----------------
+  algae[algae$taxa == "ND" & !is.na(algae$taxa), c("lake", "date", "ID", "sheet_id", "cell_per_l", "taxa", "hab")] 
+
 
 # POPULATE 'CLASS' FIELD----------------------------------------
   unique(algae$class)  # Not filled out yet
@@ -236,11 +254,21 @@ for(j in 1:length(unique(bioSource$lake))) {
   chem$station <- ifelse(nchar(chem$location) <= 6, paste(chem$lake, chem$lake, sep=""),
                              chem$location)
   table(chem$station)
+
+# Compare names to standard names Jade previously provided.  Write file with weird names.
   isLake.StationInDistrict2 <- chem$station %in% paste(2, district2$lake.station, sep="") 
-str(isLake.StationInDistrict2)  
-unique(chem[!isLake.StationInDistrict2, "station"])
-table(chem$location)
-table(chem$sample_depth)  # Looks good
+  str(isLake.StationInDistrict2)  
+  unique(chem[!isLake.StationInDistrict2, "station"])
+  more.names <- read.xls("originalData/algae/EFR Phytoplankton Data/Drew data/j/EFR_NOT_IMPORTED_CHEMICAL_2003-2012_2011_2.xlsx",
+                         sheet="20102011FIELD_DATA_NOT_IMPORTED", as.is=TRUE)
+  anamolous.chem <- unique(more.names[!(more.names$Location  %in% 
+                                          paste(2, district2$lake.station, sep="")), "Location"]
+  )
+  anamolous.chem <- data.frame(lake.station = anamolous.chem, 
+                               file = "EFR_NOT_IMPORTED_CHEMICAL_2003-2012_2011_2.xlsx",
+                               sheet = "20102011FIELD_DATA_NOT_IMPORTED")
+  write.table(anamolous.chem, file = "output/anamolousNamesChem.txt", row.names=FALSE)
+
 
 # CENSORED WATER CHEM DATA-------------------------------------------------------------
 # Dual censored values: microcystis
