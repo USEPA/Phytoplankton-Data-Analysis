@@ -4,7 +4,14 @@ library(stringr)
 library(XLConnect)
 
 #algae_dat <- read.table(file="processed_data/algae_20140325.csv", sep = ",", header = TRUE, fill = TRUE, as.is = TRUE)
-algae_dat <- read.delim(file="processed_data/algae_20140402.csv", sep = "\t", header = TRUE, fill = TRUE, as.is = TRUE, comment.char="")
+algae_dat <- read.delim(file="processed_data/algae_20140501.csv", sep = "\t", header = TRUE, fill = TRUE, as.is = TRUE, comment.char="")
+
+## add check
+
+ii <- algae_dat$taxa == "No cyanobacteria observed"
+sum(ii,na.rm = TRUE)
+ii <- is.na(algae_dat$taxa)
+
 
 dim(algae_dat)
 
@@ -130,9 +137,6 @@ algae_good <- rbind(algae_good, temp)
 
 ### check date 
 
-test <- as.Date(x=as.character(algae_good$date), format = "%Y%m%d")
-range(test)
-
 ### check length of tax strings
 
 i <- nchar(algae_good$taxa) > 50
@@ -145,7 +149,9 @@ algae_good$lake<- sub(pattern="grr",replacement="GRR", x=algae_good$lake)
 write.table( algae_good[,-c(13,14) ], paste("processed_data/cleaned_algae_", format(Sys.time(), "%Y%m%d"), ".txt", sep = ""), sep="\t", row.names=FALSE)
 
 
-check2 <- read.delim("processed_data/cleaned_algae_20140326.txt", as.is=TRUE, header = TRUE)
+algae <- read.delim("processed_data/cleaned_algae_20140423.txt", as.is=TRUE, header = TRUE)
+
+sumStat <- read.csv("processed_data/summaryStatus_20140423.csv", header = TRUE)
 
 dim(check2)
 

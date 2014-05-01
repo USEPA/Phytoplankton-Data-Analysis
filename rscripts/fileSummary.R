@@ -83,6 +83,6 @@ INFO$comment <- NA ## Fields to denote file to skip and reasons to skip them.
 
 INFOorig$file_origID <- 1:nrow(INFOorig)
 
-write.table( OUT, "output/reducedFileSurvey.0307.csv", sep = ",", row.names=FALSE)
-write.table( INFO, "output/reducedFileList.0307.csv", sep = ",", row.names=FALSE)
-write.table( INFOorig, "output/fullFileList.0307.csv", sep = ",", row.names=FALSE)
+write.table( OUT, "output/reducedFileSurvey.0501.csv", sep = ",", row.names=FALSE)
+write.table( INFO, "output/reducedFileList.0501.csv", sep = ",", row.names=FALSE)
+write.table( INFOorig, "output/fullFileList.0501.csv", sep = ",", row.names=FALSE)

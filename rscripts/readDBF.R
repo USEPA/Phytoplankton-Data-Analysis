@@ -6,6 +6,7 @@ library(foreign)
 
 setwd("originalData/algae/EFR Phytoplankton Data/")
 
+
 file <- "Drew data/a/93Algae.dbf"
 
 ## note - dbf files not currently on master list.
@@ -63,9 +64,15 @@ algae2 <- data.frame(ID = ID,
                     BV.um3.L = dat$BV_L,  
                     class = NA,
                     hab = FALSE,
-                    sheet_id = 999)
+                    sheet_id = -999)
 
 all <- rbind(algae, algae2)
+
+all$taxa <- gsub(pattern="'","", all$taxa)
+all$taxa <- gsub(pattern='"',"", all$taxa)
+
+all$lake <- gsub("grr", "GRR", all$lake)
+all$ID <- gsub("grr", "GRR", all$ID)
 
 chunck_check(all)
 

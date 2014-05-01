@@ -11,9 +11,9 @@ library(XLConnect)
 options(stringsAsFactors=FALSE)
 WRITE<- TRUE
 
-OUTold   <- read.table("output/reducedFileSurvey.0214.csv", sep = ",", header = TRUE, as.is = TRUE)
-OUT   <- read.table("output/reducedFileSurvey.0307.csv", sep = ",", header = TRUE, as.is = TRUE)
-INFO <- read.table("output/reducedFileList.0307.csv", sep = ",", as.is = TRUE, header = TRUE)
+OUTold   <- read.table("output/reducedFileSurvey.0501.csv", sep = ",", header = TRUE, as.is = TRUE)
+OUT   <- read.table("output/reducedFileSurvey.0501.csv", sep = ",", header = TRUE, as.is = TRUE)
+INFO <- read.table("output/reducedFileList.0501.csv", sep = ",", as.is = TRUE, header = TRUE)
 
 ### sheets not processed
 OUT$skip   <- NA ## comments on scripts not processed
@@ -72,9 +72,9 @@ id <- OUT$nrow == 0
 OUT$skip[id] <- "empty"
 OUT$processed[id] <- TRUE
 
-id <- grepl("^HAB", OUT$file)
-OUT$skip[id ] <- "Contained column names for density and biovolume, but seem to be missing results"
-OUT$processed[id] <- TRUE
+#id <- grepl("^HAB", OUT$file)
+#OUT$skip[id ] <- "Contained column names for density and biovolume, but seem to be missing results"
+#OUT$processed[id] <- TRUE
 
 
 ####
@@ -161,6 +161,8 @@ print(sum(OUT$processed))
 source("rscripts/readDBF.R")
 print(sum(OUT$processed))
 
+source("rscripts/readHAB.R")
+print(sum(OUT$processed))
 
 xxx <- subset(OUT, ! processed)
 View(xxx)

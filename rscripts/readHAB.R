@@ -25,7 +25,6 @@ for(i in 1:nrow(OUTsub2)){
   if(class(err) == "try-error") print( "File Missing") 
   #  print(i)
   temp <- readWorksheet(wb, sheet=OUTsub2$sheet[i])
- 
   temp$sheet_id <- OUTsub2$sheet_id[i]
   dimCheck <- nrow(temp) + dimCheck
   if(i == 1){AAA <- temp} else{
@@ -33,6 +32,10 @@ for(i in 1:nrow(OUTsub2)){
   }
 }
 
+### 
+
+ii <- AAA$Taxa == "No cyanobacteria observed" | AAA$Taxa == "ND" 
+AAA$Taxa[ii] <- "NBF"
 
 ### since ID is inconsistent, use station id as 99999
 AAA<- AAA[!is.na(AAA$Location), ]
@@ -40,13 +43,18 @@ AAA<- AAA[!is.na(AAA$Location), ]
 
 lk <- substr(AAA$Location, 2,4)
 ii <- !grepl("^2", AAA$Location)  ## missing valid lake
-lk[ii] <- "XXX"
+lk[ii] <- "EFR" ## hard code see issue 31
 ### 
 stt <- substr(AAA$Location, 5,22)
 stt <- sub("^ +", "", stt)  ## spaces only
 stt[ii] <- AAA$Location[ii]
 
 ### 
+
+### counts and density columns alternatively record values.  Assumeing both are densitye
+
+val <- apply(AAA[, c("Count.per.Taxon", "Density")], 1, max, na.rm = TRUE)
+val[!is.finite(val)] <- NA
 
 ID <- paste("2", lk, stt, AAA$Sample.Date, AAA$Sample.Time, "000", sep = "")
 algae <- data.frame(ID = ID,
@@ -55,14 +63,26 @@ algae <- data.frame(ID = ID,
                     depth_ft = "000",
                     date = AAA$Sample.Date,
                     taxa = AAA$Taxa,
-                    cell_per_l = AAA$Count.per.Taxon * 1000, ### converted from ml
+                    cell_per_l = val * 1000, ### converted from ml
                     BV.um3.L = NA,  
                     class = NA,
                     hab = TRUE ,
                     sheet_id = AAA$sheet_id)
 
+### fix date
+
+ii  <- algae$taxa == "NBF"
+algae$cell_per_l[ii] <- 0
+algae$class[ii] <- "Blue-Green"
+algae$BV.um3.L[ii] <- 0
+
+ii <- grepl("^0605", algae$date)
+algae$date[ii]<- "20130605"
+
 
 chunck_check(algae)
+
+
 
 setwd(homeDir)
 
