@@ -3,9 +3,11 @@
 setwd("originalData/algae/EFR Phytoplankton Data/")
 
 id <- grepl("Phytoplankton", OUT$file) & grepl("Sample Results", OUT$sheet)
+id1 <- grepl("jade0424a", OUT$full_file_name) ## analyze new files separately
 
-OUTsub2 <- OUT[id & OUT$processed == FALSE, ]
-#OUTsub2 <- OUT[id , ]
+OUTsub2 <- OUT[(id & !id1) & OUT$processed == FALSE, ]
+
+#OUTsub2 <- OUT[(id & !id1) , ]
 
 OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
 OUT$script[OUT$full_file_name %in% OUTsub2$full_file_name] <- "readSample.R"

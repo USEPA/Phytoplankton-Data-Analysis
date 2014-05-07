@@ -35,7 +35,7 @@ for(i in 1:nrow(OUTsub2)){
 ### 
 
 ii <- AAA$Taxa == "No cyanobacteria observed" | AAA$Taxa == "ND" 
-AAA$Taxa[ii] <- "NBF"
+AAA$Taxa[ii] <- "NAF" ## no algae found
 
 ### since ID is inconsistent, use station id as 99999
 AAA<- AAA[!is.na(AAA$Location), ]
@@ -71,7 +71,7 @@ algae <- data.frame(ID = ID,
 
 ### fix date
 
-ii  <- algae$taxa == "NBF"
+ii  <- algae$taxa == "NAF"
 algae$cell_per_l[ii] <- 0
 algae$class[ii] <- "Blue-Green"
 algae$BV.um3.L[ii] <- 0
