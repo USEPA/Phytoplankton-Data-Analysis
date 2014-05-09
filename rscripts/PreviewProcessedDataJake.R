@@ -8,7 +8,7 @@
 
 # READ IN AND FORMAT algae.csv FROM processed_data FOLDER-------------------------
 # Reading from processed_data folder
-  algae <- read.delim("processed_data/cleaned_algae_20140423.txt", as.is=TRUE, header = TRUE)
+  algae <- read.delim("processed_data/cleaned_algae_20140509.txt", as.is=TRUE, header = TRUE)
   head(algae)
   str(algae)
 
@@ -36,7 +36,7 @@
                            ifelse(algae$lake %in% district3$lake, 3, NA))
 
 # Are HAB monitoring data coded correctly?
-  algae[!is.na(algae$cell_per_l) & is.na(algae$BV.um3.L), c("hab")]
+  algae[!is.na(algae$cell_per_l) & is.na(algae$BV.um3.L), c("hab")]  # Should all be TRUE
 
 # Analysis of anamolous site names
   algae$lake.station <- paste(algae$lake, algae$station, sep="")  # Create new id
@@ -60,7 +60,7 @@
 
 # Strip leading and trailing spaces in taxa  
   algae$taxa <- gsub("^\\s+|\\s+$", "", algae$taxa)
-  unique(algae$taxa)  # Good
+  unique(algae$taxa)[order(unique(algae$taxa))][1:700] # Good
   unique(algae$class)  # Good
   unique(algae$hab)  # Good
   unique(algae$qual_replicate)  # Looks good, NA, Q, or R
@@ -89,16 +89,15 @@
     date.yr.lk$lake <- factor(date.yr.lk$lake, date.yr.lk[order(date.yr.lk$total, decreasing=T), "lake"])  # Needed to order bars
     ggplot(date.yr.lk, aes(lake, total)) + geom_bar()    
 
-# TAKE A LOOK AT SOME TAXA----------------
-  algae[algae$taxa == "ND" & !is.na(algae$taxa), c("lake", "date", "ID", "sheet_id", "cell_per_l", "taxa", "hab")] 
-
 
 # POPULATE 'CLASS' FIELD----------------------------------------
   unique(algae$class)  # Not filled out yet
   algae <- subset(algae, select = -c(class))  # Remove class field.  Merge it in below.
   # Lisa's algal classification data
-    clas <- read.delim('originalData/algae/Classification_EFR Phyto leu.txt', header = TRUE, fill = TRUE,
-                   na.strings=c('', 'NA'), sep='\t', as.is = TRUE)  # read.delim works while read.table doesn't.  Related to quote specification (http://stackoverflow.com/questions/3016333/r-why-does-read-table-stop-reading-a-file)
+    clas <- read.xls('originalData/algae/LouisvilleDistrictPhytoClassification.05092014.xlsx', 
+                     header = TRUE,
+                     na.strings=c('', 'NA'),
+                     as.is = TRUE)  # read.delim works while read.table doesn't.  Related to quote specification (http://stackoverflow.com/questions/3016333/r-why-does-read-table-stop-reading-a-file)
     str(clas)
     clas <- clas[,c('Taxa', 'Class')]  # Remove notes columns
     names(clas) <- c('taxa', 'class')  # Change names per phytoplankton data precedent
