@@ -4,7 +4,7 @@ library(stringr)
 library(XLConnect)
 
 #algae_dat <- read.table(file="processed_data/algae_20140325.csv", sep = ",", header = TRUE, fill = TRUE, as.is = TRUE)
-algae_dat <- read.delim(file="processed_data/algae_20140501.csv", sep = "\t", header = TRUE, fill = TRUE, as.is = TRUE, comment.char="")
+algae_dat <- read.delim(file="processed_data/algae_20140508.csv", sep = "\t", header = TRUE, fill = TRUE, as.is = TRUE, comment.char="")
 
 ## add check
 
@@ -29,7 +29,7 @@ dim(algae_dat)
 # length(unique(algae_dat$taxa))
 #z <- data.frame( old = x, new = y)
 
-info <- read.table(file="processed_data/summary.status0226.csv", sep = ",", header = TRUE, fill = TRUE, as.is = TRUE)
+info <- read.table(file="processed_data/summaryStatus_20140508.csv", sep = ",", header = TRUE, fill = TRUE, as.is = TRUE)
 info$sheet_id <- as.numeric(info$sheet_id)
 
 numClass <- c("depth_ft", "sheet_id", "cell_per_l", "BV.um3.L")

@@ -149,5 +149,5 @@ write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = "\t", appe
 write.table(algae1, "processed_data/algae.csv", row.names=FALSE, sep = "\t", append= TRUE, col.names = FALSE)          
 print(dim(wq_dat))
 #print(head(wq_dat))
-write.table(wq_dat, "processed_data/water_quality.csv", sep = ",", row.names=FALSE, col.names=FALSE, append = TRUE)                    
+write.table(wq_dat, "processed_data/water_quality.csv", sep = "\t", row.names=FALSE, col.names=FALSE, append = TRUE)                    
 }

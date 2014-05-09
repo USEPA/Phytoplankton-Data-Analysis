@@ -28,8 +28,8 @@ OUT$processed[id ] <- TRUE
 OUT$script[id   ] <- "readRemaining.R"
 OUT$skip[id] <- "Not imported see issue 22, item 3"
 
-
 ##
+
 id<- OUT$sheet == "2011_FIELD_DATA_NOT_IMPORTED"
 OUT$processed[id ] <- TRUE
 OUT$script[id   ] <- "readRemaining.R"
@@ -312,6 +312,114 @@ wq_dat1 <- wq_dat1[!ii, ]
 ###
 
 all <- rbind(all, wq_dat1)
+
+
+
+####
+id <- OUT$full_file_name == "Drew data/k/EFR_CCK May 2010.xlsx"
+id1 <- OUT$sheet == "Sheet1"
+
+OUTsub2 <- OUT[id & id1, ]
+OUT$processed[id  & !OUT$processed ] <- TRUE
+OUT$script[id  & !OUT$processed ] <- "readRemaining.R"
+
+xlcFreeMemory()
+err <-    try( wb     <- loadWorkbook(OUTsub2$full_file_name) )
+
+if(class(err) == "try-error"){ print("Error")}  
+temp <- readWorksheet(wb, sheet= 1, header=TRUE)
+
+temp1 <- melt(temp, value.name="result",id.vars=c("Station", "Date.YR.MO.DA", "Time", "Depth"),
+              measure.vars=c("Temp", "D.O.", "Sp.Cond",  "pH", "Turbidity", "Secchi" ) )
+##
+wq_dat1 <- data.frame(location = substr(temp1$Station, 2,4),
+                      station = substr(temp1$Station, 5,10),
+                      sample_date  = temp1$Date.YR.MO.DA ,
+                      sample_time  = temp1$Time,
+                      sample_depth = temp1$Depth,
+                      lrl_tag_num  = NA,     
+                      analyte  = temp1$variable,
+                      analyte_code = NA,
+                      result = temp1$result,
+                      units  = NA,
+                      qualifiers = NA, 
+                      detect_limit  = NA, 
+                      report_limit = NA, 
+                      prep_method  =  NA,     
+                      test_method  = "Field",    
+                      df = NA,           
+                      lab_id = NA,           
+                      lab_sample_number = NA,
+                      analysis_date = NA,     
+                      imported  = NA,         
+                      sheet_id  = OUTsub2$sheet_id            
+)
+wq_dat1$ID <- paste( "2", wq_dat1$location, wq_dat1$station, wq_dat1$sample_date, 
+                     formatC(wq_dat1$sample_time, flag = "0", width =4, digits=4),
+                     formatC(wq_dat1$sample_depth, flag = "0", width =3, digits=3), sep = "" )
+
+
+ii <- nchar(wq_dat1$ID)==25  ## corrupt date
+wq_dat1 <- wq_dat1[!ii, ]
+###
+
+all <- rbind(all, wq_dat1)
+
+####
+
+####
+
+id <- OUT$full_file_name == "Drew data/k/efrsep2010field.xlsx"
+id1 <- OUT$sheet == "Sheet1"
+
+OUTsub2 <- OUT[id & id1, ]
+OUT$processed[id  & !OUT$processed ] <- TRUE
+OUT$script[id  & !OUT$processed ] <- "readRemaining.R"
+
+xlcFreeMemory()
+err <-    try( wb     <- loadWorkbook(OUTsub2$full_file_name) )
+
+if(class(err) == "try-error"){ print("Error")}  
+temp <- readWorksheet(wb, sheet= 1, header=TRUE)
+
+temp1 <- melt(temp, value.name="result",id.vars=c("Station", "Date.YR.MO.DA", "Time", "Depth"),
+              measure.vars=c("Temp", "D.O.", "Sp.Cond",  "pH", "Turbidity", "Secchi" ) )
+##
+wq_dat1 <- data.frame(location = substr(temp1$Station, 2,4),
+                      station = substr(temp1$Station, 5,10),
+                      sample_date  = temp1$Date.YR.MO.DA ,
+                      sample_time  = temp1$Time,
+                      sample_depth = temp1$Depth,
+                      lrl_tag_num  = NA,     
+                      analyte  = temp1$variable,
+                      analyte_code = NA,
+                      result = temp1$result,
+                      units  = NA,
+                      qualifiers = NA, 
+                      detect_limit  = NA, 
+                      report_limit = NA, 
+                      prep_method  =  NA,     
+                      test_method  = "Field",    
+                      df = NA,           
+                      lab_id = NA,           
+                      lab_sample_number = NA,
+                      analysis_date = NA,     
+                      imported  = NA,         
+                      sheet_id  = OUTsub2$sheet_id            
+)
+wq_dat1$ID <- paste( "2", wq_dat1$location, wq_dat1$station, wq_dat1$sample_date, 
+                     formatC(wq_dat1$sample_time, flag = "0", width =4, digits=4),
+                     formatC(wq_dat1$sample_depth, flag = "0", width =3, digits=3), sep = "" )
+
+
+ii <- nchar(wq_dat1$ID)==25  ## corrupt date
+wq_dat1 <- wq_dat1[!ii, ]
+###
+
+all <- rbind(all, wq_dat1)
+
+
+
 
 setwd(homeDir)
 

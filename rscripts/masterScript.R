@@ -166,6 +166,7 @@ print(sum(OUT$processed))
 source("rscripts/readMisc.R")
 print(sum(OUT$processed))
 
+## algae
 source("rscripts/readDBF.R")
 print(sum(OUT$processed))
 
@@ -173,8 +174,8 @@ source("rscripts/readHAB.R")
 print(sum(OUT$processed))
 
 
-# source("rscripts/readRemain.R")
-# print(sum(OUT$processed))
+source("rscripts/readRemain.R")
+print(sum(OUT$processed))
 
 xxx <- subset(OUT, ! processed)
 View(xxx)
@@ -182,6 +183,9 @@ View(xxx)
 write.table(OUT, paste("processed_data/summaryStatus_", format(Sys.time(), "%Y%m%d"), ".csv", sep = ""), row.names = FALSE, sep = ",")
 xx <- paste("processed_data/algae_", format(Sys.time(), "%Y%m%d"), ".csv", sep = "")
 cmd <- paste('cp processed_data/algae.csv', xx )
+
+xx <- paste("processed_data/Xwq_", format(Sys.time(), "%Y%m%d"), ".csv", sep = "")
+cmd <- paste('cp processed_data/water_quality.csv', xx )
 
 system( cmd)
 cmd <- paste("chmod a-w", xx)
