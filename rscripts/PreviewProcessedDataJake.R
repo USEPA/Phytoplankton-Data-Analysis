@@ -94,24 +94,37 @@
   unique(algae$class)  # Not filled out yet
   algae <- subset(algae, select = -c(class))  # Remove class field.  Merge it in below.
   # Lisa's algal classification data
-    clas <- read.xls('originalData/algae/LouisvilleDistrictPhytoClassification.05092014.xlsx', 
+    clas <- read.delim('originalData/algae/LouisvilleDistrictPhytoClassification.05092014.txt', 
                      header = TRUE,
+                       sep="\t",
+                       comment.char="",
                      na.strings=c('', 'NA'),
-                     as.is = TRUE)  # read.delim works while read.table doesn't.  Related to quote specification (http://stackoverflow.com/questions/3016333/r-why-does-read-table-stop-reading-a-file)
+                     as.is = TRUE)  
     str(clas)
-    clas <- clas[,c('Taxa', 'Class')]  # Remove notes columns
-    names(clas) <- c('taxa', 'class')  # Change names per phytoplankton data precedent
+    clas <- clas[,c('Taxa', 'Group')]  # Remove notes columns
+    names(clas) <- c('taxa', 'group')  # Change names per phytoplankton data precedent
     clas$taxa <- gsub("^\\s+|\\s+$", "", clas$taxa)  # Remove white spaces
-    clas$class <- gsub("^\\s+|\\s+$", "", clas$class)  # Remove white spaces
+    clas$group <- gsub("^\\s+|\\s+$", "", clas$group)  # Remove white spaces
   # Merge clas with phytoplankton data  
     ld.algae <- merge(algae, clas, by = 'taxa', all=T)  # 'ld' for Louisville District
     str(ld.algae)  
     ld.algae$Bio.per.cell <- with(ld.algae, BV.um3.L / cell_per_l)
-  # Pull out algal taxa w/out a corresponding class ID from Lisa
-    no.class <- unique(ld.algae[is.na(ld.algae$class) & !is.na(ld.algae$taxa), 'taxa' ])  # Where Class is NA, but taxa is known.  Unique to reduce redundancies.  Send to Lisa for updating.
-    no.class[order(no.class)]  # Only a few, very god.
-    write.table(no.class, file = "output/no.class.txt", row.names=F)
+# Pull out algal taxa not included in class from Lisa
+  no.taxa <- unique(ld.algae[!(ld.algae$taxa %in% clas$taxa), "taxa"])
+  str(ld.algae[!(ld.algae$taxa %in% clas$taxa), "taxa"])
 
+ld.algae[ld.algae$taxa %in% no.taxa, c("taxa", "sheet_id")]
+write.table(no.taxa, 
+              file = paste("output/no.taxa.", Sys.Date(), ".txt", sep=""),
+              row.names=FALSE)
+# Pull out algal taxa w/out a corresponding class ID from Lisa      
+    no.group <- unique(ld.algae[is.na(ld.algae$group) & !is.na(ld.algae$taxa), 'taxa' ])  # Where Class is NA, but taxa is known.  Unique to reduce redundancies.  Send to Lisa for updating.
+    no.group[order(no.group)]  # Only a few, very god.
+    write.table(no.class, 
+                file = paste("output/no.class.", Sys.Date(), ".txt", sep=""), 
+                row.names=F)
+# Look at some taxa
+ld.algae[ld.algae$taxa == "Anabaena #112422", c("taxa", "sheet_id")]
 # CONVERT BLUE-GREEN CELL COUNTS TO BIOVOLUME---------------------
 # First, identify all taxa that need biovolume (all HAB == TRUE records)
 # Second, identify all examples where these taxa were found in routine monitoring
@@ -348,6 +361,5 @@ algae <- read.delim("processed_data/cleaned_algae_20140422.txt",
                     header = TRUE)
 unique(algae$lake)
 algae[algae$lake == 'grr', 'sheet_id']
-
 
 
