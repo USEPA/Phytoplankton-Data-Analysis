@@ -113,10 +113,16 @@
   no.taxa <- unique(ld.algae[!(ld.algae$taxa %in% clas$taxa), "taxa"])
   str(ld.algae[!(ld.algae$taxa %in% clas$taxa), "taxa"])
 
-ld.algae[ld.algae$taxa %in% no.taxa, c("taxa", "sheet_id")]
-write.table(no.taxa, 
-              file = paste("output/no.taxa.", Sys.Date(), ".txt", sep=""),
-              row.names=FALSE)
+  ld.algae[ld.algae$taxa %in% no.taxa, c("taxa", "sheet_id")]
+  write.table(no.taxa, 
+                file = paste("output/no.taxa.", Sys.Date(), ".txt", sep=""),
+                row.names=FALSE)
+# Investigate strangely formatted taxa names
+  ld.algae[ld.algae$taxa %in% unique(ld.algae$taxa)[c(22,1851,1852,1856,1917,1919)], c("taxa", "sheet_id", 
+                                                                                         "cell_per_l", "BV.um3.L")] 
+# Taxa reported w/out sheet_id, cell_per_l, or BV.um3.L
+  algae[with(algae, is.na(sheet_id) & is.na(cell_per_l) & is.na(BV.um3.L) & !is.na(taxa)),
+           c("taxa", "sheet_id", "cell_per_l", "BV.um3.L")]
 # Pull out algal taxa w/out a corresponding class ID from Lisa      
     no.group <- unique(ld.algae[is.na(ld.algae$group) & !is.na(ld.algae$taxa), 'taxa' ])  # Where Class is NA, but taxa is known.  Unique to reduce redundancies.  Send to Lisa for updating.
     no.group[order(no.group)]  # Only a few, very god.
@@ -125,6 +131,7 @@ write.table(no.taxa,
                 row.names=F)
 # Look at some taxa
 ld.algae[ld.algae$taxa == "Anabaena #112422", c("taxa", "sheet_id")]
+
 # CONVERT BLUE-GREEN CELL COUNTS TO BIOVOLUME---------------------
 # First, identify all taxa that need biovolume (all HAB == TRUE records)
 # Second, identify all examples where these taxa were found in routine monitoring
@@ -247,12 +254,15 @@ for(j in 1:length(unique(bioSource$lake))) {
 
 # PREVIEW WATER CHEM DATA THAT MATT IMPORTED------------------------------------------
 # Reading from output/processed_data folder
-  chem <- read.table("processed_data/water_quality.csv", sep = ",", header = TRUE, as.is = TRUE,na.strings=c("", "NA"))
+  chem <- read.table("processed_data/combined_wq_20140509.txt", sep = "\t", 
+                     header = TRUE, fill=TRUE, comment.char="",
+                      as.is = TRUE)
   head(chem)
   str(chem)
 
 # 9999 or 99999999 are used for time and data when data are not provided.  Inspect occurence.
-  table(chem$sample_date)  # No 999 entries, but 726 occurences of 30501 and 6 of 30502?
+  table(chem$sample_date)  # No 999 entries, but many other strange dates
+  sum(is.na(chem$sample_date))  # No missing values
   table(chem$sample_time)  # 74 occurences of 9999
   chem$rdate <- as.Date(as.character(chem$sample_date), format = '%Y%m%d')
   table(chem$rdate)
@@ -260,12 +270,16 @@ for(j in 1:length(unique(bioSource$lake))) {
 # Inspect ID
   table(nchar(chem$ID))  # Most are 24, as expected, but also have 21, 22, and 23.
   table(substr(chem$ID, start=2, stop=4))  # Mostly EFR.  9 lakes represented
-  chem$lake <-  substr(chem$ID, start=2, stop=4)
-  table(chem$lake) 
   table(chem$location)
-  chem$station <- ifelse(nchar(chem$location) <= 6, paste(chem$lake, chem$lake, sep=""),
-                             chem$location)
+  table(chem$lake)  # Only 9 lakes 
+  sum(is.na(chem$lake))  # 19127 missing values
+  nrow(chem[is.na(chem$lake) & !is.na(chem$location), c("lake", "location")][2])
   table(chem$station)
+
+  chem$lake.station <- paste(chem$lake, chem$station, sep="")
+  table(chem$lake.station)  # revisit after lake names have been put together
+  table(chem$sample_depth)
+  sum(is.na(chem$sample_depth))
 
 # Compare names to standard names Jade previously provided.  Write file with weird names.
   isLake.StationInDistrict2 <- chem$station %in% paste(2, district2$lake.station, sep="") 
@@ -289,7 +303,7 @@ for(j in 1:length(unique(bioSource$lake))) {
        c('analyte', 'original', 'qual1', 'qual2', 'result_num2', 'result_num')
        ]  # 68 dual censored microsystin values
   table(chem[chem$analyte == 'Microcystin', 'original']) #  All values are censored, mostly left.
-  table(chem[chem$analyte == 'Microcystin', c('ID', 'rdate','original')]) #  2011 data from EFR only.  Won't use in analysis
+  table(chem[chem$analyte == 'Microcystin', c('ID', 'sample_date','original')]) #  2011 data from EFR only.  Won't use in analysis
 
 # Left censored values
   chem$result_final <- chem$result_num  # This vector will contain final numbers for analysis
@@ -305,9 +319,13 @@ for(j in 1:length(unique(bioSource$lake))) {
 # Will change to 1/2 detection limit
   chem[chem$qual1 == 'ND' & !is.na(chem$qual1), 'result_final'] =
     chem[chem$qual1 == 'ND' & !is.na(chem$qual1), 'detect_limit'] * 0.5
+length(chem$analyte)
 
 # TAKE A LOOK AT WATER CHEM ANALYTES---------------------------------------------------
-  unique(chem$analyte)  # 101 analytes.  Lots of overlap in N species
+  write.table(unique(chem$analyte), #  274 analytes.  Lots of overlap in N species
+              file = paste("output/analyte.names.", Sys.Date(), ".txt", sep=""),
+              row.names=FALSE)
+              
 
 # Look at N species
   unique(chem[grep(pattern='Nitrogen', x=chem$analyte), 'analyte'])
@@ -362,4 +380,17 @@ algae <- read.delim("processed_data/cleaned_algae_20140422.txt",
 unique(algae$lake)
 algae[algae$lake == 'grr', 'sheet_id']
 
-
+# STORET DATA----------------------
+  storet <- read.delim("originalData/algae/EFR Phytoplankton Data/storet/Data_JJB_20140512_091843_RegResults.txt",
+                       sep="\t", na.strings="", as.is=TRUE)
+  str(storet)
+  unique(storet$State)
+  storet <- storet[storet$State != "ILLINOIS",]
+  unique(storet$Station.ID)
+  unique(district2$lake) %in% unique(substr(storet$Station.ID,2,4))  # All LD lakes represented
+  storet$Lake <- substr(storet$Station.ID,2,4)  # Create lake vector
+  storet <- storet[storet$Lake %in% unique(district2$lake), ]  # Extract LD lakes
+  length(storet$Station.ID)
+  storet$Date <- as.Date(substr(storet$Activity.Start, 1, 10), format = "%Y-%m-%d")
+  summary(storet$Date)
+  table(storet$Date)
