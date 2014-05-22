@@ -29,3 +29,6 @@ wq$analyte <- sub(" +$", "", wq$analyte)
 wq$analyte <- sub(" \\+ ", "\\+", wq$analyte)
 
 write.table( wq, paste("processed_data/combined_wq_", format(Sys.time(), "%Y%m%d"), ".txt", sep = ""), sep="\t", row.names=FALSE)
+
+wqOld <- read.delim( "processed_data/combined_wq_20140509.txt", sep="\t",  header = TRUE)
+

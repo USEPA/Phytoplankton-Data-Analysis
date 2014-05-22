@@ -20,7 +20,42 @@ OUT$processed[ iii & OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
 OUT$script[iii & OUT$full_file_name %in% OUTsub2$full_file_name] <- "readJade0424a.R"
 OUT$skip[iii & OUT$full_file_name %in% OUTsub2$full_file_name] <- "Data present in Sample Results Sheet"
 
-OUTsub2 <- OUT[id  & !OUT$processed, ]
+temp <- unique(OUT$full_file_name[iii])
+i <- OUT$full_file_name %in% temp & OUT$sheet == "Sample Results"
+
+OUTsub3 <- OUT[i,]
+
+
+dimCheck <- 0
+xxx <- NULL
+for(i in 1:nrow(OUTsub3)){
+  
+  err <-    try( wb     <- loadWorkbook(OUTsub3$full_file_name[i]) )
+  if(class(err) == "try-error") print( "File Missing") 
+  #  print(i)
+  temp <- readWorksheet(wb, sheet=OUTsub3$sheet[i])
+  temp <- temp[!is.na(temp$Location), ]
+  if(i == 1){
+    xxx <- temp
+  }else{
+    xxx <- merge(OUT, temp, all = TRUE)
+  }
+  
+}
+  
+  if(nrow(temp)==0){ 
+    temp<- data.frame( Division = "Cynophycota", Genus = "Not Found", "Concentration..cells.mL." = NA)
+  }
+  temp$sample_id <- unlist(readWorksheet(wb, sheet=OUTsub2$sheet[i], 
+                                         startCol=1,endCol=1,startRow=3, endRow=3, header = FALSE) )
+  
+  temp$sample_date <- unlist(readWorksheet(wb, sheet=OUTsub2$sheet[i], 
+                                           startCol=3,endCol=3,startRow=3, endRow=3, header = FALSE) )
+  
+  
+  
+  
+  
 
 
 

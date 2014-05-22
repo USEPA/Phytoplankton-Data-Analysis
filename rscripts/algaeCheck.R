@@ -149,7 +149,7 @@ algae_good$lake<- sub(pattern="grr",replacement="GRR", x=algae_good$lake)
 write.table( algae_good[,-c(13,14) ], paste("processed_data/cleaned_algae_", format(Sys.time(), "%Y%m%d"), ".txt", sep = ""), sep="\t", row.names=FALSE)
 
 
-algae <- read.delim("processed_data/cleaned_algae_20140423.txt", as.is=TRUE, header = TRUE)
+algae <- read.delim("processed_data/cleaned_algae_20140509.txt", as.is=TRUE, header = TRUE)
 
 sumStat <- read.csv("processed_data/summaryStatus_20140423.csv", header = TRUE)
 
