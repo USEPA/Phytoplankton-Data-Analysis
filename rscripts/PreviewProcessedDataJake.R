@@ -92,7 +92,7 @@
     ggplot(date.yr.lk, aes(lake, total)) + geom_bar()    
 
 
-# POPULATE 'CLASS' FIELD----------------------------------------
+# POPULATE 'group' FIELD----------------------------------------
   unique(algae$class)  # Not filled out yet
   algae <- subset(algae, select = -c(class))  # Remove class field.  Merge it in below.
   # Lisa's algal classification data
@@ -125,13 +125,13 @@
   algae[with(algae, is.na(sheet_id) & is.na(cell_per_l) & is.na(BV.um3.L) & !is.na(taxa)),
            c("taxa", "sheet_id", "cell_per_l", "BV.um3.L")]
 # Pull out algal taxa w/out a corresponding group ID from Lisa      
-    no.group <- unique(ld.algae[is.na(ld.algae$group) & !is.na(ld.algae$taxa), 'taxa' ])  # Where group is NA, but taxa is known.  Unique to reduce redundancies.  Send to Lisa for updating.
-    no.group[order(no.group)]  # Only a few, very god.
-    write.table(no.class, 
-                file = paste("output/no.class.", Sys.Date(), ".txt", sep=""), 
-                row.names=F)
+  no.group <- unique(ld.algae[is.na(ld.algae$group) & !is.na(ld.algae$taxa), 'taxa' ])  # Where group is NA, but taxa is known.  Unique to reduce redundancies.  Send to Lisa for updating.
+  no.group[order(no.group)]  # Only a few, very god.
+  write.table(no.class, 
+              file = paste("output/no.class.", Sys.Date(), ".txt", sep=""), 
+              row.names=F)
 # Look at some taxa
-ld.algae[ld.algae$taxa == "Anabaena #112422", c("taxa", "sheet_id")]
+  ld.algae[ld.algae$taxa == "Anabaena #112422", c("taxa", "sheet_id")]
 
 # CONVERT BLUE-GREEN CELL COUNTS TO BIOVOLUME---------------------
 # First, identify all taxa that need biovolume (all HAB == TRUE records)
@@ -152,10 +152,10 @@ ld.algae[ld.algae$taxa == "Anabaena #112422", c("taxa", "sheet_id")]
   notInld.algae.index <- paste(needBio$lake, needBio$taxa, sep="") %in% paste(ld.algae[ld.algae$hab != TRUE, "lake"],
                                                        ld.algae[ld.algae$hab != TRUE, "taxa"], sep="")
   # should all = TRUE
-  notInld.algae.index
-  notInld.algae <- needBio[!notInld.algae.index,]  # Which ones are missing
-  unique(with(notInld.algae, paste(lake, rdate, taxa, sep = " ")))
-  # Need to come back and re-run this using "Suggested" names.
+    notInld.algae.index
+    notInld.algae <- needBio[!notInld.algae.index,]  # Which ones are missing
+    unique(with(notInld.algae, paste(lake, rdate, taxa, sep = " ")))
+    # Need to come back and re-run this using "Suggested" names.
 
 # Revisit after issues #26, #27, and #3 have been resolved.
 # Loop to plot the measured per cell biovolumes for each lake x taxa combination
@@ -232,8 +232,8 @@ for(j in 1:length(unique(bioSource$lake))) {
 
   # Biovolume plots
   # Total Biovolume
-    ggplot(ld.algae.agg, aes(rdate, t.BV.um3.L)) + geom_point() + ylab('Total Biovolume') + 
-      scale_x_date(breaks=x_breaks, labels = x_labels)
+      ggplot(ld.algae.agg, aes(rdate, t.BV.um3.L)) + geom_point() + ylab('Total Biovolume') + 
+        scale_x_date(breaks=x_breaks, labels = x_labels)
     # BG Biovolume      
       ggplot(ld.algae.agg[ld.algae.agg$lake == "EFR",], aes(rdate, bg.BV.um3.L)) + geom_point() + ylab(expression(paste('BG Biovolume ( ', mu, m^3, '/L)'))) + 
         scale_x_date(breaks=x_breaks, labels = x_labels)
@@ -246,15 +246,15 @@ for(j in 1:length(unique(bioSource$lake))) {
     ggplot(ld.algae.agg, aes(rdate, t.cell_per_l)) + geom_point() + ylab('Total Cell count') + 
       scale_x_date(breaks=x_breaks, labels = x_labels) 
   # BG cells  
-  ggplot(ld.algae.agg[ld.algae.agg$lake == "EFR", ], aes(rdate, bg.cell_per_l)) + geom_point() + ylab('Blue Green Cell count') + 
-    scale_x_date(breaks=x_breaks, labels = x_labels) +
-    ggtitle("EFR")
+    ggplot(ld.algae.agg[ld.algae.agg$lake == "EFR", ], aes(rdate, bg.cell_per_l)) + geom_point() + ylab('Blue Green Cell count') + 
+      scale_x_date(breaks=x_breaks, labels = x_labels) +
+      ggtitle("EFR")
   
   # Proportion BG cells  
     ggplot(ld.algae.agg[ld.algae.agg$lake == "EFR", ], aes(rdate, prop.bg.cell)) + geom_point() + ylab('Proportion Blue Green by Cell count') + 
       scale_x_date(breaks=x_breaks, labels = x_labels)
 
-# PREVIEW WATER CHEM DATA THAT MATT IMPORTED------------------------------------------
+# PREVIEW WATER CHEM DATA THAT MATT IMPORTED AND JADE/DREW PROVIDED------------------------------------------
 # Reading from output/processed_data folder
   chem <- read.table("processed_data/combined_wq_20140509.txt", sep = "\t", 
                      header = TRUE, fill=TRUE, comment.char="",
@@ -297,7 +297,6 @@ for(j in 1:length(unique(bioSource$lake))) {
                                sheet = "20102011FIELD_DATA_NOT_IMPORTED")
   write.table(anamolous.chem, file = "output/anamolousNamesChem.txt", row.names=FALSE)
 
-
 # CENSORED WATER CHEM DATA-------------------------------------------------------------
 # Dual censored values: microcystis
 # Few data, all censored.  Won't use in analysis
@@ -328,7 +327,6 @@ length(chem$analyte)
               file = paste("output/analyte.names.", Sys.Date(), ".txt", sep=""),
               row.names=FALSE)
               
-
 # Look at N species
   unique(chem[grep(pattern='Nitrogen', x=chem$analyte), 'analyte'])
   chem[chem$analyte == 'Ammonia Nitrogen', 'analyte'] = 'Nitrogen, Ammonia'
@@ -383,16 +381,64 @@ unique(algae$lake)
 algae[algae$lake == 'grr', 'sheet_id']
 
 # STORET DATA----------------------
-  storet <- read.delim("originalData/algae/EFR Phytoplankton Data/storet/Data_JJB_20140512_091843_RegResults.txt",
-                       sep="\t", na.strings="", as.is=TRUE)
+  storet <- read.csv("processed_data/storet.060514.csv",
+                       na.strings="NA", as.is=TRUE)
   str(storet)
-  unique(storet$State)
-  storet <- storet[storet$State != "ILLINOIS",]
-  unique(storet$Station.ID)
-  unique(district2$lake) %in% unique(substr(storet$Station.ID,2,4))  # All LD lakes represented
-  storet$Lake <- substr(storet$Station.ID,2,4)  # Create lake vector
-  storet <- storet[storet$Lake %in% unique(district2$lake), ]  # Extract LD lakes
-  length(storet$Station.ID)
-  storet$Date <- as.Date(substr(storet$Activity.Start, 1, 10), format = "%Y-%m-%d")
-  summary(storet$Date)
-  table(storet$Date)
+  unique(storet$Activity.Medium)  # All water samples
+  unique(storet$Sample.Fraction)  # Total and Dissolved
+  storet <- storet[, c("State", "Station.ID", "Activity.Start", "Activity.Depth", "Characteristic.Name", "Sample.Fraction",
+                       "Result.Value.as.Text", "Units", "lake", "Date")]
+# Lakes
+  storet <- storet[storet$State != "ILLINOIS",]  
+  unique(storet$lake)  # OR stand for Ohio River and can be eliminated
+  storet <- storet[!grepl("OR", storet$lake), ]  # Eliminate Ohio River data
+  unique(district2$lake) %in% unique(storet$lake)  # All LD lakes represented
+  notInLD <- unique(storet$lake) %in% unique(district2$lake)  # 4 lakes not in LD
+  unique(storet$lake)[!notInLD]  #TAC = Ohio River, SPC =1 record no lat long, BBC = Ohio River
+  ###########COME BACK HERE AND CUT LAKES ABOVE!!!!!!!###############
+# Stations
+  # TRUE if lake.station in storet is also a routine site in District 2
+  station.index <- substr(storet$Station.ID, 2, nchar(storet$Station.ID)) %in% 
+    district2$lake.station  
+  # 160 lake.station combinations not included in District 2 routine sampling
+    unique(storet[!station.index, "Station.ID"])[order( unique(storet[!station.index, "Station.ID"]))]
+# Time  
+  storet$time <- substr(x=storet$Activity.Start,  12, 16)  # Will be useful for constructing ID
+  storet$rdate <- as.Date(storet$Date)
+  storet$year <- substr(storet$year, 1, 4)
+  table(storet$rdate)
+# Duration & completeness of data set
+date.yr.lk.chem <- aggregate(storet$rdate, by=list(lake=storet$lake, year=storet$year), FUN=function(X1) {length(unique(X1))})
+date.yr.lk.chem <- dcast(date.yr.lk.chem, lake ~ year, value.var="x")  # Good, but a few weird lakes
+
+date.yr.lk$total <- apply(subset(date.yr.lk,  select = -c(lake)), MARGIN=1, FUN=sum, na.rm=T)  # Calculate total per lake
+date.yr.lk$district <- ifelse(date.yr.lk$lake %in% district2$lake, 2,
+                              ifelse(date.yr.lk$lake %in% district3$lake, 3, NA))  # Add district
+year.range <- min(as.numeric(names(date.yr.lk)), na.rm=T):2014  # Define range of years included in data
+missing.years <- year.range[!(year.range %in% as.numeric(names(date.yr.lk)))]  # Define missing years
+date.yr.lk[,as.character(missing.years)] <- NA  # Add columns for missing years
+date.yr.lk <- date.yr.lk[, c("district", "lake", as.character(sort(as.numeric(names(date.yr.lk)))), "total")]  # reorder columns
+date.yr.lk <- date.yr.lk[with(date.yr.lk, order(district, lake)), ]  # reorder rows
+date.yr.lk[is.na(date.yr.lk)] = 0  # If not samples were collected, set equal to 0
+write.table(date.yr.lk, file="processed_data/algaeObservationsSummary.txt")
+date.yr.lk.melt <- melt(date.yr.lk)
+# Summary plot of # of sampling dates per year
+ggplot(date.yr.lk.melt[with(date.yr.lk.melt, variable != "total" & variable != "district"),], aes(value)) +
+  geom_histogram(binwidth = 0.5) +
+  xlab("Number of sampling dates per year")
+# Summary plot of # of sampling dates per lake for district 2  
+date.yr.lk$lake <- factor(date.yr.lk$lake, date.yr.lk[order(date.yr.lk$total, decreasing=T), "lake"])  # Needed to order bars
+ggplot(date.yr.lk, aes(lake, total)) + geom_bar()    
+
+
+
+
+
+  table(storet$Characteristic.Name)
+
+  
+  
+
+
+"Station.ID", "Activity.Start", "Activity.Depth", "Characteristic.Name", "Sample.Fraction",
+"Result.Value.as.Text", "Units", "lake", 
