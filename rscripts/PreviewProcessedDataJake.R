@@ -64,6 +64,8 @@
   unique(algae$class)  # Good
   unique(algae$hab)  # Good
   unique(algae$qual_replicate)  # Looks good, NA, Q, or R
+  # All observations should include a taxa name
+  length(algae[is.na(algae$taxa), c("taxa", "ID", "sheet_id", "cell_per_l", "BV.um3.L")][,1])
 
 # Revisit after above issues have been resolved
   algae$rdate <- as.Date(as.character(algae$date), format = '%Y%m%d')
@@ -94,7 +96,7 @@
   unique(algae$class)  # Not filled out yet
   algae <- subset(algae, select = -c(class))  # Remove class field.  Merge it in below.
   # Lisa's algal classification data
-    clas <- read.delim('originalData/algae/LouisvilleDistrictPhytoClassification.05092014.txt', 
+    clas <- read.delim('originalData/algae/LouisvilleDistrictPhytoClassification.06052014.txt', 
                      header = TRUE,
                        sep="\t",
                        comment.char="",
@@ -107,24 +109,23 @@
     clas$group <- gsub("^\\s+|\\s+$", "", clas$group)  # Remove white spaces
   # Merge clas with phytoplankton data  
     ld.algae <- merge(algae, clas, by = 'taxa', all=T)  # 'ld' for Louisville District
-    str(ld.algae)  
+    str(ld.algae)
     ld.algae$Bio.per.cell <- with(ld.algae, BV.um3.L / cell_per_l)
 # Pull out algal taxa not included in class from Lisa
   no.taxa <- unique(ld.algae[!(ld.algae$taxa %in% clas$taxa), "taxa"])
-  str(ld.algae[!(ld.algae$taxa %in% clas$taxa), "taxa"])
-
   ld.algae[ld.algae$taxa %in% no.taxa, c("taxa", "sheet_id")]
   write.table(no.taxa, 
                 file = paste("output/no.taxa.", Sys.Date(), ".txt", sep=""),
                 row.names=FALSE)
+
 # Investigate strangely formatted taxa names
   ld.algae[ld.algae$taxa %in% unique(ld.algae$taxa)[c(22,1851,1852,1856,1917,1919)], c("taxa", "sheet_id", 
                                                                                          "cell_per_l", "BV.um3.L")] 
 # Taxa reported w/out sheet_id, cell_per_l, or BV.um3.L
   algae[with(algae, is.na(sheet_id) & is.na(cell_per_l) & is.na(BV.um3.L) & !is.na(taxa)),
            c("taxa", "sheet_id", "cell_per_l", "BV.um3.L")]
-# Pull out algal taxa w/out a corresponding class ID from Lisa      
-    no.group <- unique(ld.algae[is.na(ld.algae$group) & !is.na(ld.algae$taxa), 'taxa' ])  # Where Class is NA, but taxa is known.  Unique to reduce redundancies.  Send to Lisa for updating.
+# Pull out algal taxa w/out a corresponding group ID from Lisa      
+    no.group <- unique(ld.algae[is.na(ld.algae$group) & !is.na(ld.algae$taxa), 'taxa' ])  # Where group is NA, but taxa is known.  Unique to reduce redundancies.  Send to Lisa for updating.
     no.group[order(no.group)]  # Only a few, very god.
     write.table(no.class, 
                 file = paste("output/no.class.", Sys.Date(), ".txt", sep=""), 
@@ -136,10 +137,10 @@ ld.algae[ld.algae$taxa == "Anabaena #112422", c("taxa", "sheet_id")]
 # First, identify all taxa that need biovolume (all HAB == TRUE records)
 # Second, identify all examples where these taxa were found in routine monitoring
 # and have biovolumes
-  ld.algae[ld.algae$hab == TRUE & is.na(ld.algae$class), "class"] <- "Blue-green"  # Some hab data didn't have the class field populated
+  ld.algae[ld.algae$hab == TRUE & is.na(ld.algae$group), c("group", "taxa")] <- "Blue-green"  # Check for HAB w/out class field populated
+  #ld.algae[19736, c("group")] <- "blue-green"  # Wont need this after issue #38 is resolved
   needBio <- unique(ld.algae[ld.algae$hab == TRUE, c("lake", "rdate", "taxa")])  # Pull out unique taxa per lake x date.  Doesn't account for depth x station
   needBio <- needBio[!apply(needBio, FUN=function(x) all(is.na(x)), MARGIN=1),]  # Eliminate rows with all NAs
-  needBioEFR <- unique(needBio[needBio$lake == "EFR", "taxa"])  # Pull out taxa from EFR that need biovolume
   # Logical indicating which lakextaxa combinations in needBio are in the ld.algae where hab=F
   bioSourceIndex <- paste(ld.algae$lake, ld.algae$taxa, sep="") %in%  # lake x taxa vector from ld.algae
     paste(needBio$lake, needBio$taxa, sep="")  # lake x taxa vector from needBio
@@ -154,6 +155,7 @@ ld.algae[ld.algae$taxa == "Anabaena #112422", c("taxa", "sheet_id")]
   notInld.algae.index
   notInld.algae <- needBio[!notInld.algae.index,]  # Which ones are missing
   unique(with(notInld.algae, paste(lake, rdate, taxa, sep = " ")))
+  # Need to come back and re-run this using "Suggested" names.
 
 # Revisit after issues #26, #27, and #3 have been resolved.
 # Loop to plot the measured per cell biovolumes for each lake x taxa combination
