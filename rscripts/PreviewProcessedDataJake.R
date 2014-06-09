@@ -34,6 +34,7 @@
                                        sheet="district 3", as.is=TRUE)  # Read in district3 lakes 
   algae$district <- ifelse(algae$lake %in% district2$lake, 2,
                            ifelse(algae$lake %in% district3$lake, 3, NA))
+  algae <- algae[algae$district == 2,]  # Remove district 3
 
 # Are HAB monitoring data coded correctly?
   algae[!is.na(algae$cell_per_l) & is.na(algae$BV.um3.L), c("hab")]  # Should all be TRUE
@@ -67,30 +68,35 @@
   # All observations should include a taxa name
   length(algae[is.na(algae$taxa), c("taxa", "ID", "sheet_id", "cell_per_l", "BV.um3.L")][,1])
 
-# Revisit after above issues have been resolved
+# SUMMARY TABLES FOR PRESENTATIONS------------------
   algae$rdate <- as.Date(as.character(algae$date), format = '%Y%m%d')
   algae$year <- as.numeric(substr(algae$date, 1,4))
   date.yr.lk <- aggregate(algae$rdate, by=list(lake=algae$lake, year=algae$year), FUN=function(X1) {length(unique(X1))})
   date.yr.lk <- dcast(date.yr.lk, lake ~ year, value.var="x")
   date.yr.lk$total <- apply(subset(date.yr.lk,  select = -c(lake)), MARGIN=1, FUN=sum, na.rm=T)  # Calculate total per lake
-  date.yr.lk$district <- ifelse(date.yr.lk$lake %in% district2$lake, 2,
-                                ifelse(date.yr.lk$lake %in% district3$lake, 3, NA))  # Add district
   year.range <- min(as.numeric(names(date.yr.lk)), na.rm=T):2014  # Define range of years included in data
   missing.years <- year.range[!(year.range %in% as.numeric(names(date.yr.lk)))]  # Define missing years
   date.yr.lk[,as.character(missing.years)] <- NA  # Add columns for missing years
-  date.yr.lk <- date.yr.lk[, c("district", "lake", as.character(sort(as.numeric(names(date.yr.lk)))), "total")]  # reorder columns
-  date.yr.lk <- date.yr.lk[with(date.yr.lk, order(district, lake)), ]  # reorder rows
+  date.yr.lk <- date.yr.lk[, c("lake", as.character(sort(as.numeric(names(date.yr.lk)))), "total")]  # reorder columns
+  date.yr.lk <- date.yr.lk[with(date.yr.lk, order(lake)), ]  # reorder rows
   date.yr.lk[is.na(date.yr.lk)] = 0  # If not samples were collected, set equal to 0
   write.table(date.yr.lk, file="processed_data/algaeObservationsSummary.txt")
   date.yr.lk.melt <- melt(date.yr.lk)
   # Summary plot of # of sampling dates per year
-    ggplot(date.yr.lk.melt[with(date.yr.lk.melt, variable != "total" & variable != "district"),], aes(value)) +
+    ggplot(date.yr.lk.melt[with(date.yr.lk.melt, variable != "total"), ], aes(value)) +
     geom_histogram(binwidth = 0.5) +
     xlab("Number of sampling dates per year")
   # Summary plot of # of sampling dates per lake for district 2  
     date.yr.lk$lake <- factor(date.yr.lk$lake, date.yr.lk[order(date.yr.lk$total, decreasing=T), "lake"])  # Needed to order bars
-    ggplot(date.yr.lk, aes(lake, total)) + geom_bar()    
-
+    ggplot(date.yr.lk, aes(lake, total)) + geom_bar() +
+    ylab("Total number of sampling dates per lake") 
+  # Summary plot of sites per lake
+    sites.lake <- aggregate(algae$lake.station, by=list(lake=algae$lake, year=algae$year), FUN=function(X1) {length(unique(X1))})
+    ggplot(sites.lake, aes(x)) + 
+      geom_histogram(binwidth = 0.5) +
+      xlab("Number of sampling sites per lake")
+  # Which observations are hab = TRUE
+    unique(algae[algae$hab == TRUE, c("lake", "date")])
 
 # POPULATE 'group' FIELD----------------------------------------
   unique(algae$class)  # Not filled out yet
@@ -133,7 +139,7 @@
 # Look at some taxa
   ld.algae[ld.algae$taxa == "Anabaena #112422", c("taxa", "sheet_id")]
 
-# CONVERT BLUE-GREEN CELL COUNTS TO BIOVOLUME---------------------
+# CONVERT BLUE-GREEN CELL COUNTS TO BIOVOLUME-----------------------
 # First, identify all taxa that need biovolume (all HAB == TRUE records)
 # Second, identify all examples where these taxa were found in routine monitoring
 # and have biovolumes
@@ -196,7 +202,7 @@ for(j in 1:length(unique(bioSource$lake))) {
       t.cells <- with(ld.algae, aggregate(cell_per_l ~ lake + station + depth_ft + rdate + hab, FUN = sum))  
       colnames(t.cells)[which(colnames(t.cells) == 'cell_per_l')] = 't.cell_per_l'  # Rename
     # Calculate Blue-Green cells_per_l per lake, station, depth, and date           
-      bg.cells <- with(ld.algae[ld.algae$class == 'Blue-green', ],
+      bg.cells <- with(ld.algae[ld.algae$group == 'blue-green', ],
                        aggregate(cell_per_l ~ lake + station + depth_ft + rdate + hab, FUN = sum))
       colnames(bg.cells)[which(colnames(bg.cells) == 'cell_per_l')] = 'bg.cell_per_l'   # Rename
 
@@ -205,7 +211,7 @@ for(j in 1:length(unique(bioSource$lake))) {
       t.biov <- with(ld.algae, aggregate(BV.um3.L ~ lake + station + depth_ft + rdate + hab, FUN = sum))
       colnames(t.biov)[which(colnames(t.biov) == 'BV.um3.L')] = 't.BV.um3.L'  # Rename
     # Calculate Blue-Green biovolume per lake, station, depth, and date           
-      bg.biov <- with(ld.algae[ld.algae$class == 'Blue-green', ],
+      bg.biov <- with(ld.algae[ld.algae$group == 'blue-green', ],
                     aggregate(BV.um3.L ~ lake + station + depth_ft + rdate + hab, FUN = sum))
       colnames(bg.biov)[which(colnames(bg.biov) == 'BV.um3.L')] = 'bg.BV.um3.L'  # Rename  
 
@@ -220,7 +226,7 @@ for(j in 1:length(unique(bioSource$lake))) {
   
   # Calculate Prop BG by Cells counts  
     ld.algae.agg$prop.bg.cell <- with(ld.algae.agg, bg.cell_per_l / t.cell_per_l)                 
-    ld.algae.agg[ld.algae.agg$hab == TRUE, 'prop.bg.cell'] = NA                             #This code eliminates any data from HAB monitoring where only BG where quantified. 
+    ld.algae.agg[ld.algae.agg$hab == TRUE, 'prop.bg.cell'] = NA   # This code eliminates any data from HAB monitoring where only BG where quantified. 
 
   # Reinforce order
     ld.algae.agg <- ld.algae.agg[with(ld.algae.agg, order(rdate, station, depth_ft)), ]
@@ -232,10 +238,10 @@ for(j in 1:length(unique(bioSource$lake))) {
 
   # Biovolume plots
   # Total Biovolume
-      ggplot(ld.algae.agg, aes(rdate, t.BV.um3.L)) + geom_point() + ylab('Total Biovolume') + 
+      ggplot(ld.algae.agg, aes(rdate, t.BV.um3.L)) + geom_point() + ylab(expression(paste('Total Biovolume ( ', mu, m^3, '/L)'))) + 
         scale_x_date(breaks=x_breaks, labels = x_labels)
     # BG Biovolume      
-      ggplot(ld.algae.agg[ld.algae.agg$lake == "EFR",], aes(rdate, bg.BV.um3.L)) + geom_point() + ylab(expression(paste('BG Biovolume ( ', mu, m^3, '/L)'))) + 
+      ggplot(ld.algae.agg, aes(rdate, bg.BV.um3.L)) + geom_point() + ylab(expression(paste('BG Biovolume ( ', mu, m^3, '/L)'))) + 
         scale_x_date(breaks=x_breaks, labels = x_labels)
     # Proportion BG biovolume
       ggplot(ld.algae.agg, aes(rdate, prop.bg.BV)) + geom_point() + ylab('Proportion BG Biovolume') + 
@@ -246,9 +252,8 @@ for(j in 1:length(unique(bioSource$lake))) {
     ggplot(ld.algae.agg, aes(rdate, t.cell_per_l)) + geom_point() + ylab('Total Cell count') + 
       scale_x_date(breaks=x_breaks, labels = x_labels) 
   # BG cells  
-    ggplot(ld.algae.agg[ld.algae.agg$lake == "EFR", ], aes(rdate, bg.cell_per_l)) + geom_point() + ylab('Blue Green Cell count') + 
-      scale_x_date(breaks=x_breaks, labels = x_labels) +
-      ggtitle("EFR")
+    ggplot(ld.algae.agg, aes(rdate, bg.cell_per_l)) + geom_point() + ylab(expression(paste('Blue Green Cell count (cells ', L^-1, ')'))) + 
+      scale_x_date(breaks=x_breaks, labels = x_labels) 
   
   # Proportion BG cells  
     ggplot(ld.algae.agg[ld.algae.agg$lake == "EFR", ], aes(rdate, prop.bg.cell)) + geom_point() + ylab('Proportion Blue Green by Cell count') + 
@@ -392,6 +397,7 @@ algae[algae$lake == 'grr', 'sheet_id']
   storet <- storet[storet$State != "ILLINOIS",]  
   unique(storet$lake)  # OR stand for Ohio River and can be eliminated
   storet <- storet[!grepl("OR", storet$lake), ]  # Eliminate Ohio River data
+  
   unique(district2$lake) %in% unique(storet$lake)  # All LD lakes represented
   notInLD <- unique(storet$lake) %in% unique(district2$lake)  # 4 lakes not in LD
   unique(storet$lake)[!notInLD]  #TAC = Ohio River, SPC =1 record no lat long, BBC = Ohio River
