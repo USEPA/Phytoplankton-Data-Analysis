@@ -86,7 +86,7 @@
     ggplot(date.yr.lk.melt[with(date.yr.lk.melt, variable != "total"), ], aes(value)) +
     geom_histogram(binwidth = 0.5) +
     xlab("Number of sampling dates per year")
-  # Summary plot of # of sampling dates per lake for district 2  
+  # Summary plot of # of sampling dates per lake
     date.yr.lk$lake <- factor(date.yr.lk$lake, date.yr.lk[order(date.yr.lk$total, decreasing=T), "lake"])  # Needed to order bars
     ggplot(date.yr.lk, aes(lake, total)) + geom_bar() +
     ylab("Total number of sampling dates per lake") 
@@ -231,7 +231,7 @@ for(j in 1:length(unique(bioSource$lake))) {
   # Reinforce order
     ld.algae.agg <- ld.algae.agg[with(ld.algae.agg, order(rdate, station, depth_ft)), ]
 
-# QUICK GGPLOT FIGURES-------------------------------------
+# QUICK GGPLOT FIGURES OF ALGAE-------------------------------------
   # Formatting data for x-axis
     x_breaks <- seq(as.Date('1986/1/1'), as.Date('2014/1/1'), by = '2 year')
     x_labels <- as.character(x_breaks, format='%Y')
@@ -324,7 +324,7 @@ for(j in 1:length(unique(bioSource$lake))) {
        c('ID', 'analyte', 'qualifiers', 'qual1', 'detect_limit', 'original', 'result_num')]
 # Will change to 1/2 detection limit
   chem[chem$qual1 == 'ND' & !is.na(chem$qual1), 'result_final'] =
-    chem[chem$qual1 == 'ND' & !is.na(chem$qual1), 'detect_limit'] * 0.5
+    as.numeric(chem[chem$qual1 == 'ND' & !is.na(chem$qual1), 'detect_limit']) * 0.5
 length(chem$analyte)
 
 # TAKE A LOOK AT WATER CHEM ANALYTES---------------------------------------------------
@@ -367,7 +367,7 @@ length(chem$analyte)
   chem.short <- chem[chem$analyte %in% analyte.list, ] 
 # Remove commas from analyte names, confuses ggplot
   unique(sub(pattern=',', replacement=".", x=chem.short$analyte))
-
+str(chem.short)
 # Cast into wide format
   head(dcast(chem.short, ID ~ analyte, 
              value.var = "result_final"))  # Defaults to length,  Must be duplicates
@@ -397,53 +397,86 @@ algae[algae$lake == 'grr', 'sheet_id']
   storet <- storet[storet$State != "ILLINOIS",]  
   unique(storet$lake)  # OR stand for Ohio River and can be eliminated
   storet <- storet[!grepl("OR", storet$lake), ]  # Eliminate Ohio River data
-  
   unique(district2$lake) %in% unique(storet$lake)  # All LD lakes represented
-  notInLD <- unique(storet$lake) %in% unique(district2$lake)  # 4 lakes not in LD
+  notInLD <- unique(storet$lake) %in% unique(district2$lake)  # 3 lakes not in LD
   unique(storet$lake)[!notInLD]  #TAC = Ohio River, SPC =1 record no lat long, BBC = Ohio River
-  ###########COME BACK HERE AND CUT LAKES ABOVE!!!!!!!###############
+  storet <- storet[!(storet$lake %in% unique(storet$lake)[!notInLD]), ]  # Remove 3 lakes above
+  length(unique(storet$lake))  # 20 lakes, all in district 2, in final data set
+# Time  
+  storet$time <- substr(x=storet$Activity.Start,  12, 16)  # Will be useful for constructing ID
+  storet$rdate <- as.Date(storet$Date)
+  storet$year <- substr(storet$rdate, 1, 4)
 # Stations
   # TRUE if lake.station in storet is also a routine site in District 2
   station.index <- substr(storet$Station.ID, 2, nchar(storet$Station.ID)) %in% 
     district2$lake.station  
-  # 160 lake.station combinations not included in District 2 routine sampling
-    unique(storet[!station.index, "Station.ID"])[order( unique(storet[!station.index, "Station.ID"]))]
-# Time  
-  storet$time <- substr(x=storet$Activity.Start,  12, 16)  # Will be useful for constructing ID
-  storet$rdate <- as.Date(storet$Date)
-  storet$year <- substr(storet$year, 1, 4)
-  table(storet$rdate)
+  # 157 lake.station combinations not included in District 2 routine sampling
+    unique(storet[!station.index, "Station.ID"])[order(unique(storet[!station.index, "Station.ID"]))]
+  # Remove stations that represent inflow or outflow
+  # Stations begining with "1" represent in or outflows
+    storet <- storet[substr(storet$Station.ID, 5, 5) != 1, ]
 # Duration & completeness of data set
-date.yr.lk.chem <- aggregate(storet$rdate, by=list(lake=storet$lake, year=storet$year), FUN=function(X1) {length(unique(X1))})
-date.yr.lk.chem <- dcast(date.yr.lk.chem, lake ~ year, value.var="x")  # Good, but a few weird lakes
-
-date.yr.lk$total <- apply(subset(date.yr.lk,  select = -c(lake)), MARGIN=1, FUN=sum, na.rm=T)  # Calculate total per lake
-date.yr.lk$district <- ifelse(date.yr.lk$lake %in% district2$lake, 2,
-                              ifelse(date.yr.lk$lake %in% district3$lake, 3, NA))  # Add district
-year.range <- min(as.numeric(names(date.yr.lk)), na.rm=T):2014  # Define range of years included in data
-missing.years <- year.range[!(year.range %in% as.numeric(names(date.yr.lk)))]  # Define missing years
-date.yr.lk[,as.character(missing.years)] <- NA  # Add columns for missing years
-date.yr.lk <- date.yr.lk[, c("district", "lake", as.character(sort(as.numeric(names(date.yr.lk)))), "total")]  # reorder columns
-date.yr.lk <- date.yr.lk[with(date.yr.lk, order(district, lake)), ]  # reorder rows
-date.yr.lk[is.na(date.yr.lk)] = 0  # If not samples were collected, set equal to 0
-write.table(date.yr.lk, file="processed_data/algaeObservationsSummary.txt")
-date.yr.lk.melt <- melt(date.yr.lk)
+  date.yr.lk.chem <- aggregate(storet$rdate, by=list(lake=storet$lake, year=storet$year), FUN=function(X1) {length(unique(X1))})
+  date.yr.lk.chem <- dcast(date.yr.lk.chem, lake ~ year, value.var="x")  # Good
+  date.yr.lk.chem$total <- apply(subset(date.yr.lk.chem,  select = -c(lake)), MARGIN=1, FUN=sum, na.rm=T)  # Calculate total per lake
+  year.range <- min(as.numeric(names(date.yr.lk.chem)), na.rm=T):2014  # Define range of years included in data
+  missing.years <- year.range[!(year.range %in% as.numeric(names(date.yr.lk.chem)))]  # Define missing years
+  date.yr.lk.chem[,as.character(missing.years)] <- NA  # Add columns for missing years
+  date.yr.lk.chem <- date.yr.lk.chem[, c("lake", as.character(sort(as.numeric(names(date.yr.lk.chem)))), "total")]  # reorder columns
+  date.yr.lk.chem <- date.yr.lk.chem[with(date.yr.lk.chem, order(lake)), ]  # reorder rows
+  date.yr.lk.chem[is.na(date.yr.lk.chem)] = 0  # If no samples were collected, set equal to 0
+  write.table(date.yr.lk.chem, file="processed_data/chemObservationsSummary.txt")  # Good, extra days for DO and temp
+  date.yr.lk.chem.melt <- melt(date.yr.lk.chem)
 # Summary plot of # of sampling dates per year
-ggplot(date.yr.lk.melt[with(date.yr.lk.melt, variable != "total" & variable != "district"),], aes(value)) +
-  geom_histogram(binwidth = 0.5) +
-  xlab("Number of sampling dates per year")
-# Summary plot of # of sampling dates per lake for district 2  
-date.yr.lk$lake <- factor(date.yr.lk$lake, date.yr.lk[order(date.yr.lk$total, decreasing=T), "lake"])  # Needed to order bars
-ggplot(date.yr.lk, aes(lake, total)) + geom_bar()    
+  ggplot(date.yr.lk.chem.melt[with(date.yr.lk.chem.melt, variable != "total" ),], aes(value)) +
+    geom_histogram(binwidth = 0.5) +
+    xlab("Number of sampling dates per year")
+# Summary plot of # of sampling dates per lake
+  date.yr.lk.chem$lake <- factor(date.yr.lk.chem$lake, date.yr.lk[order(date.yr.lk.chem$total, decreasing=T), "lake"])  # Needed to order bars
+  ggplot(date.yr.lk.chem, aes(lake, total)) + geom_bar() +
+    ylab("Total number of sampling dates per lake")   
+
+# Analyte names
+  write.table(unique(storet$Characteristic.Name), file="processed_data/storetCharacteristicName.txt",
+              row.names=FALSE)
+  unique(storet$Characteristic.Name)[grepl("Nitrogen", unique(storet$Characteristic.Name))]
+  unique(storet$Characteristic.Name)[grepl("nitrogen", unique(storet$Characteristic.Name))]
+  unique(storet$Characteristic.Name)[grepl("Phosphorus", unique(storet$Characteristic.Name))]
+  unique(storet$Characteristic.Name)[grepl("phosphorus", unique(storet$Characteristic.Name))]
+  unique(storet[storet$Characteristic.Name == "Phosphorus", c("Characteristic.Name", "Sample.Fraction")])
+  unique(storet[storet$Characteristic.Name == "Iron", c("Characteristic.Name", "Sample.Fraction")]) 
+  unique(storet[storet$Characteristic.Name == "Molybdenum", c("Characteristic.Name", "Sample.Fraction")])   
+  unique(storet[storet$Characteristic.Name == "Copper", c("Characteristic.Name", "Sample.Fraction")])  
+  unique(storet[storet$Characteristic.Name == "Manganese", c("Characteristic.Name", "Sample.Fraction")]) 
+  unique(storet[storet$Characteristic.Name == "Temperature, water", c("Characteristic.Name", "Sample.Fraction")])
+
+# Water Temperature
+  # Prepare data for plotting
+    storet.wide.temp <- dcast(storet[storet$Characteristic.Name == "Temperature, water", ], lake + Station.ID + Activity.Depth + rdate + time ~ 
+                           Characteristic.Name, value.var="Result.Value.as.Text")
+    names(storet.wide.temp) = c("lake", "Station.ID", "Activity.Depth", "rdate", "time", "Water.Temperature")
+    head(storet.wide.temp)
+    storet.wide.temp <- storet.wide.temp[with(storet.wide.temp, order(lake, Station.ID, rdate, Activity.Depth)), ]
+    unique(paste(storet.wide.temp$Station.ID, storet.wide.temp$rdate))  # over 6000 station x date combinations
+  # Plot in one 6000 page .pdf!  Stopped after 15 minutes.  Wrote 3907 pages.
+    pdf(file = "output/Figures/tempProfiles.pdf")
+    for(i in 1:length(unique(storet.wide.temp$Station.ID))) {
+      Station.ID.i <- unique(storet.wide.temp$Station.ID)[i]
+      data.i <- storet.wide.temp[storet.wide.temp$Station.ID == Station.ID.i, ]
+      for(j in 1:length(unique(data.i$rdate))) {
+        date.j <- unique(data.i$rdate)[j]
+        data.j <- data.i[data.i$rdate == date.j,]
+        try(print(
+          ggplot(data.j, aes_string(x="Water.Temperature", y="Activity.Depth")) +
+            geom_point() +
+            scale_y_reverse() +
+            ggtitle(paste(data.j$Station.ID, data.j$rdate))),
+            silent=TRUE)
+      }
+    }
+    dev.off()
 
 
-
-
-
-  table(storet$Characteristic.Name)
-
-  
-  
 
 
 "Station.ID", "Activity.Start", "Activity.Depth", "Characteristic.Name", "Sample.Fraction",
