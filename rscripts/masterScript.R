@@ -5,13 +5,13 @@ homeDir <- "/Users/mattpocernich/repos/epa_2013/2013/TO 0016/analysis/Phytoplank
 setwd(homeDir)
 
 source("rscripts/helperFunctions.R")
-source("rscripts/chunck_check.R")
+#source("rscripts/chunck_check.R")
 library(XLConnect)
 
 options(stringsAsFactors=FALSE)
 WRITE<- TRUE
 
-OUTold   <- read.table("output/reducedFileSurvey.0501.csv", sep = ",", header = TRUE, as.is = TRUE)
+#OUTold   <- read.table("output/reducedFileSurvey.0501.csv", sep = ",", header = TRUE, as.is = TRUE)
 OUT   <- read.table("output/reducedFileSurvey.0501.csv", sep = ",", header = TRUE, as.is = TRUE)
 INFO <- read.table("output/reducedFileList.0501.csv", sep = ",", as.is = TRUE, header = TRUE)
 
@@ -183,8 +183,10 @@ View(xxx)
 write.table(OUT, paste("processed_data/summaryStatus_", format(Sys.time(), "%Y%m%d"), ".csv", sep = ""), row.names = FALSE, sep = ",")
 xx <- paste("processed_data/algae_", format(Sys.time(), "%Y%m%d"), ".csv", sep = "")
 cmd <- paste('cp processed_data/algae.csv', xx )
+system( cmd)
 
-xx <- paste("processed_data/Xwq_", format(Sys.time(), "%Y%m%d"), ".csv", sep = "")
+
+xx <- paste("processed_data/wq_", format(Sys.time(), "%Y%m%d"), ".csv", sep = "")
 cmd <- paste('cp processed_data/water_quality.csv', xx )
 
 system( cmd)
