@@ -448,7 +448,8 @@ algae[algae$lake == 'grr', 'sheet_id']
   unique(storet[storet$Characteristic.Name == "Molybdenum", c("Characteristic.Name", "Sample.Fraction")])   
   unique(storet[storet$Characteristic.Name == "Copper", c("Characteristic.Name", "Sample.Fraction")])  
   unique(storet[storet$Characteristic.Name == "Manganese", c("Characteristic.Name", "Sample.Fraction")]) 
-  unique(storet[storet$Characteristic.Name == "Temperature, water", c("Characteristic.Name", "Sample.Fraction")])
+  unique(storet[storet$Characteristic.Name == "Sodium", c("Characteristic.Name", "Sample.Fraction")])
+  unique(storet[storet$Characteristic.Name == "Silica", c("Characteristic.Name", "Sample.Fraction")])
 
 # Water Temperature
   # Prepare data for plotting
