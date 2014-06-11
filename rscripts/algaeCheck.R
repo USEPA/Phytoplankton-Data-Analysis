@@ -4,7 +4,7 @@ library(stringr)
 library(XLConnect)
 
 #algae_dat <- read.table(file="processed_data/algae_20140325.csv", sep = ",", header = TRUE, fill = TRUE, as.is = TRUE)
-algae_dat <- read.delim(file="processed_data/algae_20140508.csv", sep = "\t", header = TRUE, fill = TRUE, as.is = TRUE, comment.char="")
+algae_dat <- read.delim(file="processed_data/algae_20140610.csv", sep = "\t", header = TRUE, fill = TRUE, as.is = TRUE, comment.char="")
 
 ## add check
 
@@ -149,9 +149,9 @@ algae_good$lake<- sub(pattern="grr",replacement="GRR", x=algae_good$lake)
 write.table( algae_good[,-c(13,14) ], paste("processed_data/cleaned_algae_", format(Sys.time(), "%Y%m%d"), ".txt", sep = ""), sep="\t", row.names=FALSE)
 
 
-algae <- read.delim("processed_data/cleaned_algae_20140509.txt", as.is=TRUE, header = TRUE)
+algae <- read.delim("processed_data/cleaned_algae_20140610.txt", as.is=TRUE, header = TRUE)
 
-sumStat <- read.csv("processed_data/summaryStatus_20140423.csv", header = TRUE)
+sumStat <- read.csv("processed_data/summaryStatus_20140610.csv", header = TRUE)
 
 dim(check2)
 

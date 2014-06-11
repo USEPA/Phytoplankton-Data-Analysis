@@ -6,7 +6,7 @@ ii <- nchar(xx$location) == 9
 
 unique(xx$location[ii])
 
-xx$lake[ii] <- substr(xx$location, 2,4 )
+xx$lake[ii] <- substr(xx$location[ii], 2,4 )
 xx$station[ii] <- substr(xx$location[ii], 5,9 )
 
 temp <- as.numeric(xx$location)
@@ -27,6 +27,9 @@ wq <- wq[!ii, ]
 
 wq$analyte <- sub(" +$", "", wq$analyte)
 wq$analyte <- sub(" \\+ ", "\\+", wq$analyte)
+
+
+
 
 write.table( wq, paste("processed_data/combined_wq_", format(Sys.time(), "%Y%m%d"), ".txt", sep = ""), sep="\t", row.names=FALSE)
 
