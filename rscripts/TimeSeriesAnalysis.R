@@ -23,7 +23,7 @@
   ld.algae.agg.no.na.bg.bv <- ld.algae.agg[with(ld.algae.agg, !is.na(bg.BV.um3.L) &
                                                   !is.na(DOY) & !is.na(station) &
                                                   !is.na(year) & !is.na(depth_ft)), ]
-  m1 <- gamm(bg.BV.um3.L ~ s(DOY) + s(year),
+  m1 <- gamm(bg.BV.um3.L ~ s(DOY) + s(year) + depth_ft + station,
              random = list(lake =~ 1),
             data = ld.algae.agg.no.na.bg.bv)
 
