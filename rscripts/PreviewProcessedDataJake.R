@@ -5,6 +5,7 @@
   library(reshape)
   library(reshape2)
   library(gdata)
+  library(plyr)
 
 # READ IN AND FORMAT algae.csv FROM processed_data FOLDER-------------------------
 # Reading from processed_data folder
@@ -84,17 +85,17 @@
   date.yr.lk.melt <- melt(date.yr.lk)
   # Summary plot of # of sampling dates per year
     ggplot(date.yr.lk.melt[with(date.yr.lk.melt, variable != "total"), ], aes(value)) +
-    geom_histogram(binwidth = 0.5) +
-    xlab("Number of sampling dates per year")
+    geom_histogram(binwidth = 0.2) +
+    xlab("Number of sampling dates per year by lake")
   # Summary plot of # of sampling dates per lake
     date.yr.lk$lake <- factor(date.yr.lk$lake, date.yr.lk[order(date.yr.lk$total, decreasing=T), "lake"])  # Needed to order bars
     ggplot(date.yr.lk, aes(lake, total)) + geom_bar() +
     ylab("Total number of sampling dates per lake") 
   # Summary plot of sites per lake
-    sites.lake <- aggregate(algae$lake.station, by=list(lake=algae$lake, year=algae$year), FUN=function(X1) {length(unique(X1))})
+    sites.lake <- aggregate(algae$lake.station, by=list(lake=algae$lake, year=algae$rdate), FUN=function(X1) {length(unique(X1))})
     ggplot(sites.lake, aes(x)) + 
       geom_histogram(binwidth = 0.5) +
-      xlab("Number of sampling sites per lake")
+      xlab("Number of sampling sites per lake per sampling date")
   # Which observations are hab = TRUE
     unique(algae[algae$hab == TRUE, c("lake", "date")])
 
@@ -246,6 +247,16 @@ for(j in 1:length(unique(bioSource$lake))) {
     # Proportion BG biovolume
       ggplot(ld.algae.agg, aes(rdate, prop.bg.BV)) + geom_point() + ylab('Proportion BG Biovolume') + 
         scale_x_date(breaks=x_breaks, labels = x_labels)
+    # Biovolume by site.  Define name factor for plotting
+      mean.bg.bv.site <- ddply(ld.algae.agg, .(lake), summarize, 
+                               mean = mean(bg.BV.um3.L, na.rm=TRUE))
+      ld.algae.agg$flake <- factor(ld.algae.agg$lake, 
+                                   levels=mean.bg.bv.site[order(mean.bg.bv.site$mean, decreasing=TRUE), "lake"],
+                                   ordered=TRUE)
+      ggplot(ld.algae.agg, aes(flake, bg.BV.um3.L)) + geom_boxplot() +
+        scale_y_log10() +
+        ylab("Blue-Green biovolume (um3/L") +
+        theme(axis.title.x = element_blank())
     
   # Cells per L plots                  
   # Total cells
