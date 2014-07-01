@@ -11,14 +11,12 @@ library(XLConnect)
 options(stringsAsFactors=FALSE)
 WRITE<- TRUE
 
-#OUTold   <- read.table("output/reducedFileSurvey.0501.csv", sep = ",", header = TRUE, as.is = TRUE)
-OUT   <- read.table("output/reducedFileSurvey.0501.csv", sep = ",", header = TRUE, as.is = TRUE)
-INFO <- read.table("output/reducedFileList.0501.csv", sep = ",", as.is = TRUE, header = TRUE)
-
-###
-
+#OUTold   <- read.table("output/reducedFileSurvey.0630.csv", sep = ",", header = TRUE, as.is = TRUE)
+OUT   <- read.table("output/reducedFileSurvey.0630.csv", sep = ",", header = TRUE, as.is = TRUE)
+INFO <- read.table("output/reducedFileList.0630.csv", sep = ",", as.is = TRUE, header = TRUE)
 
 ### sheets not processed
+
 OUT$skip   <- NA ## comments on scripts not processed
 OUT$script <-NA ## identify the script used for each file
 
@@ -70,9 +68,9 @@ id4 <- grepl("Data Q&A", OUT$full_file_name,ignore.case=TRUE) #### do not includ
 OUT$skip[id2|  id4 ] <- "Contained duplicate or processed data"
 OUT$processed[id2| id4] <- TRUE
 
-id <- grepl("jade0424a", OUT$full_file_name) ## analyze new files separately
-OUT$skip[id] <- "jade0424 files"
-OUT$processed[id] <- TRUE
+# id <- grepl("jade0424a", OUT$full_file_name) ## analyze new files separately
+# OUT$skip[id] <- "jade0424 files"
+# OUT$processed[id] <- TRUE
 
 
 ### empty sheets
@@ -110,7 +108,6 @@ OUT$processed[id] <- TRUE
 id <- OUT$file == "2007 (2).xls"
 OUT$skip[id] <- "Files have no headers; Confirm how to calculate density and biovolume with these fields"
 OUT$processed[id] <- TRUE
-
 
 OUT$script[OUT$processed] <- "Not Processed"
 
