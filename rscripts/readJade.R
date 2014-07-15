@@ -97,5 +97,22 @@ sum(jade$processed)
 
 i <- jade$nrow == 1 ## in sequence files with one row have numeric sheets with algae data, without volume
 files <- unique(jade$full_file_name[i])
+xxx <- NULL
+for(j in 1:4){
+  err <-    try( wb     <- loadWorkbook(files[j]) )
+  if(class(err) == "try-error") print( "File Missing") 
+  wsheets <- getSheets(wb)  
+  ws <- wsheets[!grepl("Sam", wsheets)]
+  tempResults <- readWorksheet(wb, sheet="Sample Details" ) 
+  tempData <- readWorksheet(wb, sheet = ws, startRow=9)
+  tempData <- tempData[!is.na(tempData$Division),]
+  tempData$Location <- tempResults$Location
+  tempData$Sample.Date <- tempResults$Sample.Date
+  tempData$Depth <- tempResults$Sample.Depth
+  tempData$Time <- tempResults$Sample.Time
+  xxx <- merge(xxx, tempData, all = TRUE)
+}
+
 
 ii <- jade$full_file_name %in% files
+jade$processed[ii] <- TRUE
