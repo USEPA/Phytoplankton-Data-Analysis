@@ -11,8 +11,9 @@ id <- grepl(pattern="jade0424a", OUT$full_file_name)
 ### subset of jade0424a files
 OUTsub2 <- OUT[id  & !OUT$processed, ]
 
- # bkup <- OUTsub2
-  # bkupOUT <- OUT
+## commented out for processing work.
+# bkup <- OUTsub2
+# bkupOUT <- OUT
 
  OUTsub2 <- bkup
  OUT <- bkup
@@ -30,7 +31,7 @@ OUTsub2$script[iii]    <- "readJade0424a.R"
 OUTsub2$skip[iii]      <- "Not processed, data read by merging sample results and details."
 
 ####
-OUTsub3 <- OUTsub2[iii,]
+OUTsub3 <- OUTsub2[iii,]  ## contains sheets from 2 files.
 
 dimCheck <- 0
 xxx <- NULL
@@ -50,6 +51,7 @@ for(j in 1:length(files)){
   }else { xxx <- merge(xxx, tempBoth, all = TRUE)}
 }
 
+
 i <- OUT$full_file_name %in% files
 OUT$processed[i] <- TRUE
 
@@ -57,7 +59,7 @@ groupA <- xxx
 ####
 
 files <- "jade0424a/2BRR20120911 Phytoplankton.xls" 
-
+### this file contains meta information on the sheet with info on "Sample Details"
 for(j in 1:length(files)){
   err <-    try( wb     <- loadWorkbook(files[j]) )
   if(class(err) == "try-error") print( "File Missing") 
@@ -74,15 +76,22 @@ wsheets <-   wsheets[grep("^121",wsheets)]
 }
   tempBoth <- merge(tempResults, xxx, all.x = TRUE ) 
 }
+
 groupAA <- tempBoth
-
-
 ###
+
+tempDetails <- readWorksheet(wb, sheet="Sample Details" ) 
+
+groupAAA <- merge(groupAA, tempDetails, all.x = TRUE)
+
+
 temp <- unique(OUTsub2$full_file_name)
 i    <- OUT$full_file_name %in% temp & OUT$sheet == "Sample Results" & !(OUT$full_file_name %in% files)# & !OUT$processed
 iX   <- OUTsub2$full_file_name %in% temp & OUTsub2$sheet == "Sample Results" & !(OUTsub2$full_file_name %in% files)
 
+
 OUTsub3 <- OUT[i,]
+
 
 OUT$processed[i] <- TRUE
 OUTsub2$processed[iX] <- TRUE
@@ -147,6 +156,7 @@ OUT$skip[iii & OUT$full_file_name %in% OUTsub2$full_file_name] <- "Data present 
 #OUTsub2$processed[ii] <- TRUE
 
 OUTsub3 <- OUTsub2[!iiiX,]
+
 #X <- subset(OUTsub2, ncol == 8)
 
 
