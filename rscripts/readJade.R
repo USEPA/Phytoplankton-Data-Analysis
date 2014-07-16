@@ -113,6 +113,44 @@ for(j in 1:4){
   xxx <- merge(xxx, tempData, all = TRUE)
 }
 
+### a little cleanup
 
-ii <- jade$full_file_name %in% files
-jade$processed[ii] <- TRUE
+i <- nchar(xxx$Location) == 24
+xxx$Time[i] <- substr(xxx$Location[i], 18,21)
+
+###
+
+groupB <- xxx
+
+
+### grab sample results, merge with sample details
+
+i <- jade$sheet == "Sample Results"  & !jade$processed ## in sequence files with one row have numeric sheets with algae data, without volume
+
+files <- unique(jade$full_file_name[i])
+
+
+for(j in 1:41){
+  err <-    try( wb     <- loadWorkbook(files[j]) )
+  if(class(err) == "try-error") print( "File Missing") 
+ 
+#  tempDetails <- readWorksheet(wb, sheet="Sample Details" ) 
+  tempResults <- readWorksheet(wb, sheet = "Sample Results")
+
+ind <- grepl("^Col", names(tempResults) )
+tempResults <- tempResults[,!ind]
+
+names(tempResults) <- gsub("\\.", replacement="", names(tempResults))
+
+ii <- is.na(tempResults$Location)
+
+
+tempResults <- tempResults[!ii, ]
+if(j == 1){xxx <- tempResults} else{
+  xxx <- merge(xxx, tempResults, all = TRUE) }
+
+print(dim(xxx))
+
+}
+
+jade$processed[jade$full_file_name %in% files] <- TRUE
