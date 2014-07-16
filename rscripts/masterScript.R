@@ -12,8 +12,8 @@ options(stringsAsFactors=FALSE)
 WRITE<- TRUE
 
 #OUTold   <- read.table("output/reducedFileSurvey.0630.csv", sep = ",", header = TRUE, as.is = TRUE)
-OUT   <- read.table("output/reducedFileSurvey.0630.csv", sep = ",", header = TRUE, as.is = TRUE)
-INFO <- read.table("output/reducedFileList.0630.csv", sep = ",", as.is = TRUE, header = TRUE)
+OUT   <- read.table("output/reducedFileSurvey.0716.csv", sep = ",", header = TRUE, as.is = TRUE)
+INFO <- read.table("output/reducedFileList.0716.csv", sep = ",", as.is = TRUE, header = TRUE)
 
 ### sheets not processed
 
@@ -35,7 +35,6 @@ OUT$processed[id] <- TRUE
 id <- OUT$file == "FY13 Lab Analysis Details.xlsx"
 OUT$skip[id] <- "Cost Details., some location lat lon"
 OUT$processed[id] <- TRUE
-
 
 id <- OUT$file == "FY13 Lab Analysis Estimate.xlsx"
 OUT$skip[id] <- "Cost Details., some location lat lon"
@@ -111,11 +110,13 @@ OUT$processed[id] <- TRUE
 
 OUT$script[OUT$processed] <- "Not Processed"
 ## source 
+## contains wq data
 source("rscripts/readJade.R")
 print(sum(OUT$processed))
 
+source("rscripts/readJade0623.R")
+print(sum(OUT$processed))
 
-## contains wq data
 source("rscripts/readDirG.R")
 print(sum(OUT$processed))
 

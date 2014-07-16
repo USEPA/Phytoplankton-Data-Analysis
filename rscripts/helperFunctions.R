@@ -141,7 +141,7 @@ chunck_check <-function(x){
   
   if(!  all( is.finite(x$cell_per_l) | is.finite(x$BV.um3.L) ) ){ print("! Missing data ")}
   print("Checked")
-  
+  print(system("wc -l '/Users/mattpocernich/repos/epa_2013/2013/TO 0016/analysis/Phytoplankton-Data-Analysis/processed_data/algae.csv' "))
   ### check for ' marks
   
   i <- grepl( pattern="'", x$taxa)

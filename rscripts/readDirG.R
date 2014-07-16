@@ -147,9 +147,11 @@ algae <- rbind(algae1, algae0)
 algae$taxa <- gsub(pattern='"', replacement = "", algae$taxa)
 algae$taxa <- gsub(pattern="'", replacement = "", algae$taxa)
 
-chunck_check(algae)
 
 setwd(homeDir)
+chunck_check(algae)
+
+
 if(WRITE){
 write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = "\t")      
 #print(dim(WQ_all))
