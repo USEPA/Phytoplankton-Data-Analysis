@@ -4,7 +4,7 @@ library(stringr)
 library(XLConnect)
 
 #algae_dat <- read.table(file="processed_data/algae_20140325.csv", sep = ",", header = TRUE, fill = TRUE, as.is = TRUE)
-algae_dat <- read.delim(file="processed_data/algae_20140610.csv", sep = "\t", header = TRUE, fill = TRUE, as.is = TRUE, comment.char="")
+algae_dat <- read.delim(file="processed_data/algae_20140716.csv", sep = "\t", header = TRUE, fill = TRUE, as.is = TRUE, comment.char="")
 
 ## add check
 
@@ -29,7 +29,7 @@ dim(algae_dat)
 # length(unique(algae_dat$taxa))
 #z <- data.frame( old = x, new = y)
 
-info <- read.table(file="processed_data/summaryStatus_20140508.csv", sep = ",", header = TRUE, fill = TRUE, as.is = TRUE)
+info <- read.table(file="processed_data/summaryStatus_20140716.csv", sep = ",", header = TRUE, fill = TRUE, as.is = TRUE)
 info$sheet_id <- as.numeric(info$sheet_id)
 
 numClass <- c("depth_ft", "sheet_id", "cell_per_l", "BV.um3.L")
@@ -149,10 +149,9 @@ algae_good$lake<- sub(pattern="grr",replacement="GRR", x=algae_good$lake)
 write.table( algae_good[,-c(13,14) ], paste("processed_data/cleaned_algae_", format(Sys.time(), "%Y%m%d"), ".txt", sep = ""), sep="\t", row.names=FALSE)
 
 
-algae <- read.delim("processed_data/cleaned_algae_20140610.txt", as.is=TRUE, header = TRUE)
+algae <- read.delim("processed_data/cleaned_algae_20140716.txt", as.is=TRUE, header = TRUE)
 
 sumStat <- read.csv("processed_data/summaryStatus_20140610.csv", header = TRUE)
 
-dim(check2)
 
 

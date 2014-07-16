@@ -22,7 +22,7 @@ OUT$script <-NA ## identify the script used for each file
 
 id <- OUT$sheet == "Sample Details"
 OUT$skip[id] <- "redundant"
-OUT$processed[id] <- TRUE
+#OUT$processed[id] <- TRUE
 
 id <- OUT$sheet == "Sample Scores"
 OUT$skip[id] <- "redundant"
@@ -110,6 +110,10 @@ OUT$skip[id] <- "Files have no headers; Confirm how to calculate density and bio
 OUT$processed[id] <- TRUE
 
 OUT$script[OUT$processed] <- "Not Processed"
+## source 
+source("rscripts/readJade.R")
+print(sum(OUT$processed))
+
 
 ## contains wq data
 source("rscripts/readDirG.R")
@@ -172,6 +176,9 @@ print(sum(OUT$processed))
 
 
 source("rscripts/readRemain.R")
+print(sum(OUT$processed))
+
+source("rscripts/readCTL.R")
 print(sum(OUT$processed))
 
 xxx <- subset(OUT, ! processed)
