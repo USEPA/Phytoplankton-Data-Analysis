@@ -84,6 +84,47 @@ algae_good <- algae_dat[!ii, ]
 test <- algae_dat[ii, ]
 test <- test[order(test$id1 ), ]
 
+### clean up records with ID greater than 24 characters.
+
+
+i <- nchar(algae_good$ID) != 24
+
+### recode 2NONAME1 as 99999
+iii <- grep("2NONAME2", algae_good$ID)
+algae_good$ID <- gsub("2NONAME2", replacement="99999", algae_good$ID )
+algae_good$station[iii] <- "2NONAME2"
+
+
+iii <- grep("2NONAME3", algae_good$ID)
+algae_good$ID <- gsub("2NONAME3", replacement="99999", algae_good$ID )
+algae_good$station[iii] <- "2NONAME3"
+
+iii <- grep("2NONAME4", algae_good$ID)
+algae_good$ID <- gsub("2NONAME4", replacement="99999", algae_good$ID )
+algae_good$station[iii] <- "2NONAME4"
+
+# iii <- grep("2NONAME10", algae_good$ID)
+# algae_good$ID <- gsub("2NONAME10", replacement="99999", algae_good$ID )
+# algae_good$station[iii] <- "2NONAME10"
+
+iii <- grep("2NONAME1", algae_good$ID)
+algae_good$ID <- gsub("2NONAME1", replacement="99999", algae_good$ID )
+algae_good$station[iii] <- "2NONAME1"
+
+
+ii <- nchar(algae_good$ID) == 25 
+algae_good$ID[ii] <- paste(substr(algae_good$ID[ii],1,10  ),substr(algae_good$ID[ii], 12,25 ) , sep = "")
+algae_good$station[ii] <-  "2NONAME10"
+
+
+algae_good$ID <- gsub("CAMPBEACH", replacement="99999", algae_good$ID )
+algae_good$ID <- gsub("Campground Beach", replacement="99999", algae_good$ID )
+algae_good$ID <- gsub("Algae Bloom Sample", replacement="99999", algae_good$ID )
+
+
+algae_good$depth_ft[i] <-  substr(algae_good$ID[i], 22, 24)
+
+
 #test2 <- subset(test, !sheet_id %in% c(614, 594))
 ### write function to determine replicate 
 
@@ -135,13 +176,14 @@ temp <- algae_dat[iii,]
 temp$qual_replicate <- "Q"
 algae_good <- rbind(algae_good, temp)
 
-### check date 
+### remove empty taxa, issue 38
+
+i <- is.na(algae_good$taxa)
 
 ### check length of tax strings
 
 i <- nchar(algae_good$taxa) > 50
-
-
+algae_good<- algae_good[!i, ]
 
 algae_good$lake<- sub(pattern="grr",replacement="GRR", x=algae_good$lake)
 
