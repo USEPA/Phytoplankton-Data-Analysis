@@ -59,9 +59,9 @@
 # Look at values of algal density and biovolume
   summary(algae$cell_per_l)
   algae[algae$cell_per_l < 0, c("lake", "rdate", "ID", "sheet_id", "cell_per_l", "taxa")]
-  algae[algae$cell_per_l == -9999, c("lake", "rdate", "ID", "sheet_id", "cell_per_l", "taxa")]
+  algae[algae$cell_per_l == 9999, c("lake", "rdate", "ID", "sheet_id", "cell_per_l", "taxa")]
   algae[algae$BV.um3.l  < 0, c("lake", "rdate", "ID", "sheet_id", "cell_per_l", "taxa")]
-  algae[algae$cell_per_l == -9999, c("lake", "rdate", "ID", "sheet_id", "cell_per_l", "taxa")]
+  algae[algae$cell_per_l == 9999, c("lake", "rdate", "ID", "sheet_id", "cell_per_l", "taxa")]
 
 
 # Strip leading and trailing spaces in taxa  
@@ -104,8 +104,16 @@
 # SUMMARY STATS FOR TAXONOMY CONTRACT-------------------
   #1.  How many samples were taken over the sampling period?
   length(unique(algae[algae$district == 2, "ID"]))  #8200, should be number of unique samples
+
   #2.  How many data points are in the historic data set?
   length(algae[!is.na(algae$taxa), "ID"])  # Exlude observations with no Taxa. 236,993
+  #How many in Missing Biovolume List?
+  miss.biov <- algae[is.na(algae$BV.um3.L) & !is.na(algae$cell_per_l),  # Extract taxa per lake x date. Doesn't account for depth x station
+                     c("lake", "rdate", "taxa")]
+  miss.biov <- miss.biov[with(miss.biov, order(lake, rdate)), ]  # Reorder
+  u.miss.biov <- unique(miss.biov)  # Pull out unique taxa per lake x date.  Doesn't account for depth x station
+  length(u.miss.biov[,1])
+
 
 # POPULATE 'group' FIELD----------------------------------------
   unique(algae$class)  # Not filled out yet
