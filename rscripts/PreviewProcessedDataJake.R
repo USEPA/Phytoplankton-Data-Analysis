@@ -9,7 +9,7 @@
 
 # READ IN AND FORMAT algae.csv FROM processed_data FOLDER-------------------------
 # Reading from processed_data folder
-  algae <- read.delim("processed_data/cleaned_algae_20140509.txt", as.is=TRUE, header = TRUE)
+  algae <- read.delim("processed_data/cleaned_algae_20140717.txt", as.is=TRUE, header = TRUE)
   head(algae)
   str(algae)
 
@@ -18,6 +18,10 @@
   table(algae$lake)  # Unusual lake names from District 3
   unique(algae$station)  # Still need to consult with Jade on a few of these
   unique(algae$depth_ft) # Good
+
+# Add date
+  algae$rdate <- as.Date(as.character(algae$date), format = "%Y%m%d")
+  algae$year <- as.numeric(substr(algae$date, 1,4))
 
 # Add district
   district2 <- read.xls("originalData/algae/FY13WQSampleCollectionSiteLocations.xlsx", 
@@ -47,7 +51,7 @@
   anamolous <- anamolous[!(substr(x=anamolous$lake.station, start=1, stop=3) %in% district3$lake),]  # remove district3
   anamolous <- anamolous[!(duplicated(anamolous$lake.station)), 
                          c("lake.station", "date", "hab", "sheet_id") ]  # Remove duplicated records
-  sheetID <- read.csv("processed_data/summaryStatus_20140423.csv", as.is = TRUE) 
+  sheetID <- read.csv("processed_data/summaryStatus_20140716.csv", as.is = TRUE) 
   anamolous <- merge(anamolous, sheetID[, c("sheet_id", "file")])
   anamolous.algae <- anamolous[order(anamolous$lake.station),]  # Order
   write.table(anamolous.algae, file="output/anamolousNamesAlgae.txt", row.name=FALSE)  
@@ -70,8 +74,6 @@
   length(algae[is.na(algae$taxa), c("taxa", "ID", "sheet_id", "cell_per_l", "BV.um3.L")][,1])
 
 # SUMMARY TABLES FOR PRESENTATIONS------------------
-  algae$rdate <- as.Date(as.character(algae$date), format = '%Y%m%d')
-  algae$year <- as.numeric(substr(algae$date, 1,4))
   date.yr.lk <- aggregate(algae$rdate, by=list(lake=algae$lake, year=algae$year), FUN=function(X1) {length(unique(X1))})
   date.yr.lk <- dcast(date.yr.lk, lake ~ year, value.var="x")
   date.yr.lk$total <- apply(subset(date.yr.lk,  select = -c(lake)), MARGIN=1, FUN=sum, na.rm=T)  # Calculate total per lake
@@ -98,6 +100,12 @@
       xlab("Number of sampling sites per lake per sampling date")
   # Which observations are hab = TRUE
     unique(algae[algae$hab == TRUE, c("lake", "date")])
+
+# SUMMARY STATS FOR TAXONOMY CONTRACT-------------------
+  #1.  How many samples were taken over the sampling period?
+  length(unique(algae[algae$district == 2, "ID"]))  #8200, should be number of unique samples
+  #2.  How many data points are in the historic data set?
+  length(algae[!is.na(algae$taxa), "ID"])  # Exlude observations with no Taxa. 236,993
 
 # POPULATE 'group' FIELD----------------------------------------
   unique(algae$class)  # Not filled out yet
