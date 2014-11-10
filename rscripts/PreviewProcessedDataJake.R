@@ -419,7 +419,8 @@ algae[algae$lake == 'grr', 'sheet_id']
   unique(storet$Activity.Medium)  # All water samples
   unique(storet$Sample.Fraction)  # Total and Dissolved
   storet <- storet[, c("State", "Station.ID", "Activity.Start", "Activity.Depth", "Characteristic.Name", "Sample.Fraction",
-                       "Result.Value.as.Text", "Units", "lake", "Date")]
+                       "Statistic.Type", "Result.Value.as.Text", "Units", "Analytical.Proc.ID", "lake",
+                       "Date")]
 # Lakes
   storet <- storet[storet$State != "ILLINOIS",]  
   unique(storet$lake)  # OR stand for Ohio River and can be eliminated
@@ -464,9 +465,20 @@ algae[algae$lake == 'grr', 'sheet_id']
     ylab("Total number of sampling dates per lake")   
 
 # Analyte names
-  write.table(unique(storet$Characteristic.Name), file="processed_data/storetCharacteristicName.txt",
+# Pull out all unique combination of "Characteristic.Name" and "Analytical.Proc.ID"
+  name.method <- data.frame(stringsAsFactors=FALSE,
+                            combined = 
+                              unique(paste(storet$Characteristic.Name, 
+                              storet$Analytical.Proc.ID, 
+                                           sep = "#")))  # Odd separator used to split on below
+  name.method$Characteristic.Name <- sapply(strsplit(name.method$combined, split="#"), "[[", 1)
+  name.method$Analytical.Proc.ID <- sapply(strsplit(name.method$combined, split="#"), "[[", 2)
+  write.table(name.method, file="processed_data/storetNameMethod.txt",
               row.names=FALSE)
-  unique(storet$Characteristic.Name)[grepl("Nitrogen", unique(storet$Characteristic.Name))]
+  # Inspect table in Excel.  Reference appropriate Methods and provide appropriate analyte name
+
+ 
+
   unique(storet$Characteristic.Name)[grepl("nitrogen", unique(storet$Characteristic.Name))]
   unique(storet$Characteristic.Name)[grepl("Phosphorus", unique(storet$Characteristic.Name))]
   unique(storet$Characteristic.Name)[grepl("phosphorus", unique(storet$Characteristic.Name))]
