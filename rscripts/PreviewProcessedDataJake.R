@@ -418,11 +418,23 @@ algae[algae$lake == 'grr', 'sheet_id']
   str(storet)
   unique(storet$Activity.Medium)  # All water samples
   unique(storet$Sample.Fraction)  # Total and Dissolved
-  storet <- storet[, c("State", "Station.ID", "Activity.Start", "Activity.Depth", "Characteristic.Name", "Sample.Fraction",
-                       "Statistic.Type", "Result.Value.as.Text", "Units", "Analytical.Proc.ID", "lake",
-                       "Date")]
+
+# District 2 information
+  district2 <- read.xls("originalData/algae/FY13WQSampleCollectionSiteLocations.xlsx", 
+                        as.is=TRUE)  # Read in established sites
+  district2$id <- district2$Buckhorn  # Format
+  str(district2)
+  district2 <- district2[, "id"]  # Format
+  district2 <- district2[!(district2 %in% "ID")]  # Eliminate "ID" form lake.site name
+  district2 <- district2[!grepl(pattern=":", x=district2)]  # Eliminate lake names
+  district2 <- data.frame(lake.station = substr(district2,start=2, stop=length(nchar(district2))),
+                          lake = substr(district2, 2, 4),
+                          district = as.integer(substr(district2, 1,1)))
+  district2[,c("lake.station", "lake")] <- apply(X=district2[,c("lake.station", "lake")], 
+                                                 MARGIN=2, FUN="as.character")
+
 # Lakes
-  storet <- storet[storet$State != "ILLINOIS",]  
+  storet <- storet[storet$State != "ILLINOIS",]  # Exclude reservoirs in Illinois
   unique(storet$lake)  # OR stand for Ohio River and can be eliminated
   storet <- storet[!grepl("OR", storet$lake), ]  # Eliminate Ohio River data
   unique(district2$lake) %in% unique(storet$lake)  # All LD lakes represented
@@ -430,10 +442,12 @@ algae[algae$lake == 'grr', 'sheet_id']
   unique(storet$lake)[!notInLD]  #TAC = Ohio River, SPC =1 record no lat long, BBC = Ohio River
   storet <- storet[!(storet$lake %in% unique(storet$lake)[!notInLD]), ]  # Remove 3 lakes above
   length(unique(storet$lake))  # 20 lakes, all in district 2, in final data set
+
 # Time  
   storet$time <- substr(x=storet$Activity.Start,  12, 16)  # Will be useful for constructing ID
   storet$rdate <- as.Date(storet$Date)
   storet$year <- substr(storet$rdate, 1, 4)
+
 # Stations
   # TRUE if lake.station in storet is also a routine site in District 2
   station.index <- substr(storet$Station.ID, 2, nchar(storet$Station.ID)) %in% 
@@ -443,27 +457,6 @@ algae[algae$lake == 'grr', 'sheet_id']
   # Remove stations that represent inflow or outflow
   # Stations begining with "1" represent in or outflows
     storet <- storet[substr(storet$Station.ID, 5, 5) != 1, ]
-# Duration & completeness of data set
-  date.yr.lk.chem <- aggregate(storet$rdate, by=list(lake=storet$lake, year=storet$year), FUN=function(X1) {length(unique(X1))})
-  date.yr.lk.chem <- dcast(date.yr.lk.chem, lake ~ year, value.var="x")  # Good
-  date.yr.lk.chem$total <- apply(subset(date.yr.lk.chem,  select = -c(lake)), MARGIN=1, FUN=sum, na.rm=T)  # Calculate total per lake
-  year.range <- min(as.numeric(names(date.yr.lk.chem)), na.rm=T):2014  # Define range of years included in data
-  missing.years <- year.range[!(year.range %in% as.numeric(names(date.yr.lk.chem)))]  # Define missing years
-  date.yr.lk.chem[,as.character(missing.years)] <- NA  # Add columns for missing years
-  date.yr.lk.chem <- date.yr.lk.chem[, c("lake", as.character(sort(as.numeric(names(date.yr.lk.chem)))), "total")]  # reorder columns
-  date.yr.lk.chem <- date.yr.lk.chem[with(date.yr.lk.chem, order(lake)), ]  # reorder rows
-  date.yr.lk.chem[is.na(date.yr.lk.chem)] = 0  # If no samples were collected, set equal to 0
-  write.table(date.yr.lk.chem, file="processed_data/chemObservationsSummary.txt")  # Good, extra days for DO and temp
-  date.yr.lk.chem.melt <- melt(date.yr.lk.chem)
-# Summary plot of # of sampling dates per year
-  ggplot(date.yr.lk.chem.melt[with(date.yr.lk.chem.melt, variable != "total" ),], aes(value)) +
-    geom_histogram(binwidth = 0.5) +
-    xlab("Number of sampling dates per year")
-# Summary plot of # of sampling dates per lake
-  date.yr.lk.chem$lake <- factor(date.yr.lk.chem$lake, date.yr.lk[order(date.yr.lk.chem$total, decreasing=T), "lake"])  # Needed to order bars
-  ggplot(date.yr.lk.chem, aes(lake, total)) + geom_bar() +
-    ylab("Total number of sampling dates per lake")   
-
 
 # Result.Value.as.Text
 # Clean up character values and replace "Not Detected" with dl for analytes of interest.
@@ -479,12 +472,14 @@ algae[algae$lake == 'grr', 'sheet_id']
                     "Iron", "Kjeldahl nitrogen", "Manganese", "Molybdenum", "Nitrogen", 
                     "Nitrogen, mixed forms (NH3), (NH4), organic, (NO2) and (NO3)",
                     "Phosphorus", "Silica", "Sodium", "Total solids", "Total suspended solids")
+
 # First, define the "Units" as mg/l for all instances of "Not Detected".
   for (i in 1:length(analyte.list)){
     storet[storet$Characteristic.Name == analyte.list[i] &  # For each analyte I care about
              storet$Result.Value.as.Text == "Not Detected",  # Find censored observations
            "Units"] = "mg/l"  # Change Units from NA to "mg/l"
   }
+
 # Second, create "qual1" field for "<" or ">" for censored observations.  
 # Adopted this nomenclature from water chem file Matt pulled together.
   storet$qual1 <- ifelse(storet$Characteristic.Name %in% analyte.list &
@@ -492,6 +487,7 @@ algae[algae$lake == 'grr', 'sheet_id']
                      "<", NA)  # All censored values are below detection limit
 
 # Now, replace "Not Detected" with detection limit for all analytes of interest.
+{
 # Any Ammonia-nitrogen "Not Detected"
   storet[storet$Characteristic.Name == "Ammonia-nitrogen" & foo, # APHA~4500-NH3(D) mdl=0.03mg/L
          c("Result.Value.as.Text", "Analytical.Proc.ID")]
@@ -589,13 +585,73 @@ algae[algae$lake == 'grr', 'sheet_id']
            storet$Result.Value.as.Text == "Not Detected",
          "Result.Value.as.Text"] = min(storet[storet$Characteristic.Name == "Total suspended solids",
                                               "Result.Value.as.Text"])
+}
 
-# DEAL WITH UNITS.  CONVERT EVERYTHING TO mg/l
-unique(storet$Units)
+# Deal with units.  Convert most constituents to mg/l
+{
+# First, see what units are included
+  unique(storet$Units)
 
+# See why there are NA units
+  unique(paste(storet[is.na(storet$Units), "Result.Value.as.Text"],  # Only occur when "Not Detected"
+               storet[is.na(storet$Units),"Characteristic.Name"]))
+
+# Inspect "% recovery"
+  storet[storet$Units == "% recovery", c("Characteristic.Name", "Result.Value.as.Text")]
+  # omit all % recovery
+
+# Inspect "None"
+  table(storet[storet$Units == "None", c("Characteristic.Name")])  # all from pH
+
+# Inspect "%"
+  table(storet[storet$Units == "%", c("Characteristic.Name")])  # Most from DO, 1 from Total Solids
+  storet <- storet[!(storet$Characteristic.Name == "Total solids" & storet$Units == "%"), ] # remove TS record
+
+# Inspect "in"
+  table(storet[storet$Units == "in", c("Characteristic.Name")])  # All Secchi disk depth.  Convert to m
+
+# Inspect "ft"
+  table(storet[storet$Units == "ft", c("Characteristic.Name")])  # "Depth, bottom" convert to m
+
+# Inspect "mg/m3", "mg/kg", "g/cm3", "ppb"
+  table(storet[storet$Units %in% c("mg/m3", "ppb", "ug/kg", "mg/kg", "g/cm3"), c("Units", "Characteristic.Name")]) # chlorophyll. keep.
+  # mg/m3 is chlorophyll. Retain units.  
+  # ppb, ug/kg, and mg/kg are a variety of solutes. convert.
+  # g/cm3 is "Density" and "Specific gravity".  Retain units.
+  
+# Inspect "Acidity, hydrogen ion (H+)", "Alkalinity, total", and associated units/method
+  table(storet[storet$Characteristic.Name %in% c("Acidity, hydrogen ion (H+)", "Alkalinity, total"),
+               c("Characteristic.Name", "Units", "Analytical.Proc.ID")]) 
+  # "Alkalinity, total" via EPA~310.2 is reported as mg/l, but according to method
+  # should be mg/l CaCO3.  Change.
+  
+
+# Define desired units.  Convert most chemicals to mg/l and distances to m.
+  storet$Units2 <- ifelse(storet$Units %in% c("ug/l", "ppb", "ug/kg", "mg/kg"),
+                                            "mg/l",
+                               ifelse(storet$Units %in% c("in", "ft"), "m",
+                               ifelse(storet$Analytical.Proc.ID == "USEPA~310.2",
+                                      "mg/l CaCO3",  # alkalinity initially reported as mg/l
+                                      storet$Units)))
+# Convert original Result.Value.as.Text to new units when necessary.
+# Convert values to numeric first.  We already dealt with all text (i.e. "Not Detected") for
+# the variables we care about. So this conversion is ok.
+  storet$Result.Value <- as.numeric(storet$Result.Value.as.Text) 
+
+  storet$Result.Value.2 <- with(storet,
+                                ifelse(Units %in% c("ug/l", "ppb", "ug/kg"), 
+                                       Result.Value/1000,  # Divide by 1000 to get mg/l
+                                       ifelse( Units == "in", 
+                                               Result.Value * (2.54/100),  # in to meters
+                                       ifelse(Units == "ft",
+                                               Result.Value/3.28, # foot to meters
+                                               Result.Value))))  # if none of the above, don't change
+}
 
 # Analyte names
+{
 # Pull out all unique combination of "Characteristic.Name" and "Analytical.Proc.ID"
+# Write to disk for further inspection
   name.method <- data.frame(stringsAsFactors=FALSE,
                             combined = 
                               unique(paste(storet$Characteristic.Name, 
@@ -605,30 +661,51 @@ unique(storet$Units)
   name.method$Analytical.Proc.ID <- sapply(strsplit(name.method$combined, split="#"), "[[", 2)
   write.table(name.method, file="processed_data/storetNameMethod.txt",
               row.names=FALSE)
-  # Inspect table in Excel.  Reference appropriate Methods and provide appropriate analyte name
 
-  # Units: 
-    # Ammonia-nitrogen: mg/kg --mg/L
-    # Copper: mg/L -- ug/l
-    # Inorganic nitrogen (nitrate and nitrite): mg/kg --mg/L
-    # Iron: mg/L -- ug/L
-    # Kjeldahl nitrogen: mg/kg --mg/L
-    # Manganese: mg/l -- ug/l
-    # Molybdenum
-    # Phosphorus: ug/l - mg/l:  mg/kg -- mg/l
-    # Silica: mg
-    
-    
-  # dl
-    # Nitrogen, mixed forms (NH3), (NH4), organic, (NO2) and (NO3) via USEPA~9056
-    # has a few "Not Detected".  SOP does not provide dl.  Suggest "10 ug/l" based on experience.
+# Based on inspection of file (see above), the following naming conventions will be used:
+  storet$Characteristic.Name.2 <- with(storet,
+                                       ifelse(Characteristic.Name == "Ammonia-nitrogen",
+                                              "NH4-N",
+                                       ifelse(Characteristic.Name == "Inorganic nitrogen (nitrate and nitrite)",
+                                              "NO2.3",
+                                       ifelse(Characteristic.Name == "Nitrogen",
+                                              "Kjeldahl nitrogen",
+                                       ifelse(Characteristic.Name == "Nitrogen, mixed forms (NH3), (NH4), organic, (NO2) and (NO3)",
+                                              "nitrate.nitrite",
+                                       ifelse(Characteristic.Name == "Phosphorus",
+                                              "reactive.phosphorus",
+                                       ifelse(Characteristic.Name == "Total solids",
+                                              "Total suspended solids",
+                                              Characteristic.Name)))))))
+  
+# The data contain 163 reports of "Total solids" referencing APHA~2540-C.  The specified method
+# is for "total dissolved solids", however.  No way to reconcile this, so I will omit the data.
+  storet <- storet[with(storet, !(Characteristic.Name == "Total solids" & 
+                                    Analytical.Proc.ID == "APHA~2540-C")), ]
+}
 
+# Duration & completeness of data set
+  date.yr.lk.chem <- aggregate(storet$rdate, by=list(lake=storet$lake, year=storet$year), FUN=function(X1) {length(unique(X1))})
+  date.yr.lk.chem <- dcast(date.yr.lk.chem, lake ~ year, value.var="x")  # Good
+  date.yr.lk.chem$total <- apply(subset(date.yr.lk.chem,  select = -c(lake)), MARGIN=1, FUN=sum, na.rm=T)  # Calculate total per lake
+  year.range <- min(as.numeric(names(date.yr.lk.chem)), na.rm=T):2014  # Define range of years included in data
+  missing.years <- year.range[!(year.range %in% as.numeric(names(date.yr.lk.chem)))]  # Define missing years
+  date.yr.lk.chem[,as.character(missing.years)] <- NA  # Add columns for missing years
+  date.yr.lk.chem <- date.yr.lk.chem[, c("lake", as.character(sort(as.numeric(names(date.yr.lk.chem)))), "total")]  # reorder columns
+  date.yr.lk.chem <- date.yr.lk.chem[with(date.yr.lk.chem, order(lake)), ]  # reorder rows
+  date.yr.lk.chem[is.na(date.yr.lk.chem)] = 0  # If no samples were collected, set equal to 0
+  write.table(date.yr.lk.chem, file="processed_data/chemObservationsSummary.txt")  # Good, extra days for DO and temp
+  date.yr.lk.chem.melt <- melt(date.yr.lk.chem)
 
-foo <- storet[storet$Characteristic.Name == "Silica", c("Units", "Result.Value.as.Text")]
-unique(foo)
-str(foo)
-table(foo)
-unique(storet$Analytical.Proc.ID)
+# Summary plot of # of sampling dates per year
+  ggplot(date.yr.lk.chem.melt[with(date.yr.lk.chem.melt, variable != "total" ),], aes(value)) +
+    geom_histogram(binwidth = 0.5) +
+    xlab("Number of sampling dates per year")
+
+# Summary plot of # of sampling dates per lake
+  date.yr.lk.chem$lake <- factor(date.yr.lk.chem$lake, date.yr.lk[order(date.yr.lk.chem$total, decreasing=T), "lake"])  # Needed to order bars
+  ggplot(date.yr.lk.chem, aes(lake, total)) + geom_bar() +
+    ylab("Total number of sampling dates per lake")  
 
 # Water Temperature
   # Prepare data for plotting
