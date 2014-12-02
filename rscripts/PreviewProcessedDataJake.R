@@ -114,7 +114,6 @@
   u.miss.biov <- unique(miss.biov)  # Pull out unique taxa per lake x date.  Doesn't account for depth x station
   length(u.miss.biov[,1])
 
-
 # POPULATE 'group' FIELD----------------------------------------
   unique(algae$class)  # Not filled out yet
   algae <- subset(algae, select = -c(class))  # Remove class field.  Merge it in below.
@@ -288,76 +287,94 @@ for(j in 1:length(unique(bioSource$lake))) {
 
 # PREVIEW WATER CHEM DATA THAT MATT IMPORTED AND JADE/DREW PROVIDED------------------------------------------
 # Reading from output/processed_data folder
-  chem <- read.table("processed_data/combined_wq_20140509.txt", sep = "\t", 
+  chem <- read.table("processed_data/cleaned_wq_20141121.txt", sep = "\t", 
                      header = TRUE, fill=TRUE, comment.char="",
                       as.is = TRUE)
   head(chem)
   str(chem)
 
 # 9999 or 99999999 are used for time and data when data are not provided.  Inspect occurence.
-  table(chem$sample_date)  # No 999 entries, but many other strange dates
-  sum(is.na(chem$sample_date))  # No missing values
+  table(chem$sample_date_fixed)  # No 999 entries, but 1069 instances of 2020-01-01
+  chem$rdate <- as.Date(as.character(chem$sample_date_fixed), format = '%Y-%m-%d')
+  table(chem[chem$rdate == as.Date("2020-01-01"), "sheet_id"])  # Sheets 26, 1303, 1440
+  # Dates in sheets 26 and 1303 are unambiguous.  Dates can be found in column B
+  # of sheet 1440 as %y%m%d.
+  sum(is.na(chem$sample_date_fixed))  # No missing values
   table(chem$sample_time)  # 74 occurences of 9999
-  chem$rdate <- as.Date(as.character(chem$sample_date), format = '%Y%m%d')
+
   table(chem$rdate)
 
+# Pull out observations that are not included in STORET data.
+# Prior to 2000-04-03 and after 2012-08-30
+  time.index <- with(chem, (rdate < as.Date("2000-04-03") | rdate < as.Date("2000-04-03")) &
+                       rdate != as.Date("2020-01-01"))
+  chem.sub <- chem[time.index, ]
+  str(chem.sub)  # 400 observations              
+
 # Inspect ID
-  table(nchar(chem$ID))  # Most are 24, as expected, but also have 21, 22, and 23.
-  table(substr(chem$ID, start=2, stop=4))  # Mostly EFR.  9 lakes represented
-  table(chem$location)
-  table(chem$lake)  # Only 9 lakes 
-  sum(is.na(chem$lake))  # 19127 missing values
-  nrow(chem[is.na(chem$lake) & !is.na(chem$location), c("lake", "location")][2])
-  table(chem$station)
+  table(nchar(chem.sub$ID))  # All are 22, 24 is expected
+  table(substr(chem.sub$ID, start=2, stop=4))  # All EFR.  
+  table(chem.sub$location)
+  table(chem.sub$station)  # All have stations
 
-  chem$lake.station <- paste(chem$lake, chem$station, sep="")
-  table(chem$lake.station)  # revisit after lake names have been put together
-  table(chem$sample_depth)
-  sum(is.na(chem$sample_depth))
-
-# Compare names to standard names Jade previously provided.  Write file with weird names.
-  isLake.StationInDistrict2 <- chem$station %in% paste(2, district2$lake.station, sep="") 
-  str(isLake.StationInDistrict2)  
-  unique(chem[!isLake.StationInDistrict2, "station"])
-  more.names <- read.xls("originalData/algae/EFR Phytoplankton Data/Drew data/j/EFR_NOT_IMPORTED_CHEMICAL_2003-2012_2011_2.xlsx",
-                         sheet="20102011FIELD_DATA_NOT_IMPORTED", as.is=TRUE)
-  anamolous.chem <- unique(more.names[!(more.names$Location  %in% 
-                                          paste(2, district2$lake.station, sep="")), "Location"]
-  )
-  anamolous.chem <- data.frame(lake.station = anamolous.chem, 
-                               file = "EFR_NOT_IMPORTED_CHEMICAL_2003-2012_2011_2.xlsx",
-                               sheet = "20102011FIELD_DATA_NOT_IMPORTED")
-  write.table(anamolous.chem, file = "output/anamolousNamesChem.txt", row.names=FALSE)
+  chem.sub$lake.station <- paste(chem.sub$location, chem.sub$station, sep="")
+  table(chem.sub$lake.station)  # revisit after lake names have been put together
+  table(chem.sub$sample_depth)  # all 0
 
 # CENSORED WATER CHEM DATA-------------------------------------------------------------
 # Dual censored values: microcystis
 # Few data, all censored.  Won't use in analysis
-  chem[!is.na(chem$qual1) & !is.na(chem$qual2), 
+  chem.sub[!is.na(chem.sub$qual1) & !is.na(chem.sub$qual2), 
        c('analyte', 'original', 'qual1', 'qual2', 'result_num2', 'result_num')
-       ]  # 68 dual censored microsystin values
-  table(chem[chem$analyte == 'Microcystin', 'original']) #  All values are censored, mostly left.
-  table(chem[chem$analyte == 'Microcystin', c('ID', 'sample_date','original')]) #  2011 data from EFR only.  Won't use in analysis
+       ]  # No dual censored microsystin values
+  table(chem.sub[chem.sub$analyte == 'Microcystin', 'original']) #  None
+
 
 # Left censored values
-  chem$result_final <- chem$result_num  # This vector will contain final numbers for analysis
-  table(chem$qualifiers)  # Don't know what most of these are.  U is undetectable
-  table(chem$qual1)  # Simplified qualifiers.
-# Left censored values will be set to 1/2 dl
-  chem[chem$qual1 == '<' & !is.na(chem$qual1), 'result_final'] = 
-    chem[chem$qual1 == '<' & !is.na(chem$qual1), 'result_num'] * 0.5
+  chem.sub$result_final <- chem.sub$result_num  # This vector will contain final numbers for analysis
+  table(chem.sub$qualifiers)  # None
 
 # ND: when the data are reported as ND with a U qualifier, Matt set the value equal to -777.
-  chem[chem$qual1 == 'ND' & !is.na(chem$qual1),  # View data 
+  chem.sub[chem.sub$qual1 == 'ND' & !is.na(chem.sub$qual1),  # None 
        c('ID', 'analyte', 'qualifiers', 'qual1', 'detect_limit', 'original', 'result_num')]
-# Will change to 1/2 detection limit
-  chem[chem$qual1 == 'ND' & !is.na(chem$qual1), 'result_final'] =
-    as.numeric(chem[chem$qual1 == 'ND' & !is.na(chem$qual1), 'detect_limit']) * 0.5
-length(chem$analyte)
 
 # TAKE A LOOK AT WATER CHEM ANALYTES---------------------------------------------------
-  write.table(unique(chem$analyte), #  274 analytes.  Lots of overlap in N species
-              file = paste("output/analyte.names.", Sys.Date(), ".txt", sep=""),
-              row.names=FALSE)
+  length(unique(chem.sub$analyte))  # 45 analytes
+
+# Want unique combinations of analyte, prep_method, test_method
+  length(unique(with(chem.sub, paste(analyte, prep_method, test_method, sep = " "))))  # also 45!
+
+  # Pull out all unique combination of "Characteristic.Name" and "Analytical.Proc.ID"
+    # Write to disk for further inspection
+    name.method <- data.frame(stringsAsFactors=FALSE,
+                              combined = 
+                                unique(paste(chem.sub$analyte, 
+                                             chem.sub$prep_method,
+                                             chem.sub$test_method,
+                                             sep = "#")))  # Odd separator used to split on below
+    name.method$analyte <- sapply(strsplit(name.method$combined, split="#"), "[[", 1)
+    name.method$prep_method <- sapply(strsplit(name.method$combined, split="#"), "[[", 2)
+    name.method$test_method <- sapply(strsplit(name.method$combined, split="#"), "[[", 3)
+    write.table(name.method, file="processed_data/cleanedChemNameMethod.txt",
+                row.names=FALSE)
+    
+    # Based on inspection of file (see above), the following naming conventions will be used:
+    # Code below is from STORET script.  Use consistent analyte names!
+    storet$Characteristic.Name.2 <- with(storet,
+                                         ifelse(Characteristic.Name == "Ammonia-nitrogen",
+                                                "NH4-N",
+                                                ifelse(Characteristic.Name == "Inorganic nitrogen (nitrate and nitrite)",
+                                                       "NO2.3",
+                                                       ifelse(Characteristic.Name == "Nitrogen",
+                                                              "Kjeldahl nitrogen",
+                                                              ifelse(Characteristic.Name == "Nitrogen, mixed forms (NH3), (NH4), organic, (NO2) and (NO3)",
+                                                                     "nitrate.nitrite",
+                                                                     ifelse(Characteristic.Name == "Phosphorus",
+                                                                            "reactive.phosphorus",
+                                                                            ifelse(Characteristic.Name == "Total solids",
+                                                                                   "Total suspended solids",
+                                                                                   Characteristic.Name)))))))
+
               
 # Look at N species
   unique(chem[grep(pattern='Nitrogen', x=chem$analyte), 'analyte'])
