@@ -214,10 +214,10 @@ Hexachloroethane#USEPA~8270C	Hexachloroethane	USEPA~8270C
 Hexachloroethane#USEPA~8260B	Hexachloroethane	USEPA~8260B			
 "Indeno[1,2,3-cd]pyrene#USEPA~8270C"	"Indeno[1,2,3-cd]pyrene"	USEPA~8270C			
 "Indeno[1,2,3-cd]pyrene#USEPA~8310"	"Indeno[1,2,3-cd]pyrene"	USEPA~8310			
-Inorganic nitrogen (nitrate and nitrite)#USEPA~353.2	Inorganic nitrogen (nitrate and nitrite)	USEPA~353.2	nitrate.nitrite		
-Inorganic nitrogen (nitrate and nitrite)#APHA~4500-NO3(H)	Inorganic nitrogen (nitrate and nitrite)	APHA~4500-NO3(H)	nitrate.nitrite		0.01
-Inorganic nitrogen (nitrate and nitrite)#USEPA~9056	Inorganic nitrogen (nitrate and nitrite)	USEPA~9056	nitrate.nitrite		
-Inorganic nitrogen (nitrate and nitrite)#USEPA~300(A)	Inorganic nitrogen (nitrate and nitrite)	USEPA~300(A)	nitrate.nitrite		0.01
+Inorganic nitrogen (nitrate and nitrite)#USEPA~353.2	Inorganic nitrogen (nitrate and nitrite)	USEPA~353.2	NO2.3		
+Inorganic nitrogen (nitrate and nitrite)#APHA~4500-NO3(H)	Inorganic nitrogen (nitrate and nitrite)	APHA~4500-NO3(H)	NO2.3		0.01
+Inorganic nitrogen (nitrate and nitrite)#USEPA~9056	Inorganic nitrogen (nitrate and nitrite)	USEPA~9056	NO2.3		
+Inorganic nitrogen (nitrate and nitrite)#USEPA~300(A)	Inorganic nitrogen (nitrate and nitrite)	USEPA~300(A)	NO2.3		0.01
 Iron#USCOEKY~SW6020A	Iron	USCOEKY~SW6020A	Iron	ICP-MS	0.013
 Iron#USEPA~6010B	Iron	USEPA~6010B	Iron	ICP-AES	
 Iron#USEPA~6010C	Iron	USEPA~6010C	Iron	ICP-AES	
@@ -278,8 +278,8 @@ Nickel#USEPA~200.7(W)	Nickel	USEPA~200.7(W)
 Nitrobenzene#USEPA~8270C	Nitrobenzene	USEPA~8270C			
 Nitrobenzene-D5#USEPA~8270C	Nitrobenzene-D5	USEPA~8270C			
 Nitrogen#USEPA~351.2	Nitrogen	USEPA~351.2	Kjeldahl nitrogen		
-"Nitrogen, mixed forms (NH3), (NH4), organic, (NO2) and (NO3)#USEPA~300(A)"	"Nitrogen, mixed forms (NH3), (NH4), organic, (NO2) and (NO3)"	USEPA~300(A)	nitrate.nitrite		
-"Nitrogen, mixed forms (NH3), (NH4), organic, (NO2) and (NO3)#USEPA~9056"	"Nitrogen, mixed forms (NH3), (NH4), organic, (NO2) and (NO3)"	USEPA~9056	nitrate.nitrite		0.01
+"Nitrogen, mixed forms (NH3), (NH4), organic, (NO2) and (NO3)#USEPA~300(A)"	"Nitrogen, mixed forms (NH3), (NH4), organic, (NO2) and (NO3)"	USEPA~300(A)	NO2.3		
+"Nitrogen, mixed forms (NH3), (NH4), organic, (NO2) and (NO3)#USEPA~9056"	"Nitrogen, mixed forms (NH3), (NH4), organic, (NO2) and (NO3)"	USEPA~9056	NO2.3		0.01
 N-Nitrosodimethylamine#USEPA~8270C	N-Nitrosodimethylamine	USEPA~8270C			
 N-Nitrosodi-n-butylamine#USEPA~8270C	N-Nitrosodi-n-butylamine	USEPA~8270C			
 N-Nitrosodiphenylamine#USEPA~8270C	N-Nitrosodiphenylamine	USEPA~8270C			
@@ -295,7 +295,7 @@ o-Nitrophenol#USEPA~8270C	o-Nitrophenol	USEPA~8270C
 Organic carbon#APHA~5310-D	Organic carbon	APHA~5310-D			
 Organic carbon#USEPA~9060	Organic carbon	USEPA~9060			
 Organic carbon#APHA~5310-B	Organic carbon	APHA~5310-B			
-Orthophosphate#USEPA~9056	Orthophosphate	USEPA~9056			
+Orthophosphate#USEPA~9056	Orthophosphate	USEPA~9056		IC	
 o-Xylene#USEPA~8260B	o-Xylene	USEPA~8260B			
 "p,p'-DDD#USEPA~8081A"	"p,p'-DDD"	USEPA~8081A			
 "p,p'-DDT#USEPA~8081A"	"p,p'-DDT"	USEPA~8081A			

@@ -341,8 +341,8 @@ for(j in 1:length(unique(bioSource$lake))) {
 # TAKE A LOOK AT WATER CHEM ANALYTES---------------------------------------------------
   length(unique(chem.sub$analyte))  # 45 analytes
 
-# Want unique combinations of analyte, prep_method, test_method
-  length(unique(with(chem.sub, paste(analyte, prep_method, test_method, sep = " "))))  # also 45!
+# Want unique combinations of analyte, prep_method, test_method, and units
+  length(unique(with(chem.sub, paste(analyte, prep_method, test_method, units, sep = " "))))  # also 45!
 
   # Pull out all unique combination of "Characteristic.Name" and "Analytical.Proc.ID"
     # Write to disk for further inspection
@@ -351,10 +351,12 @@ for(j in 1:length(unique(bioSource$lake))) {
                                 unique(paste(chem.sub$analyte, 
                                              chem.sub$prep_method,
                                              chem.sub$test_method,
+                                             chem.sub$units,
                                              sep = "#")))  # Odd separator used to split on below
     name.method$analyte <- sapply(strsplit(name.method$combined, split="#"), "[[", 1)
     name.method$prep_method <- sapply(strsplit(name.method$combined, split="#"), "[[", 2)
     name.method$test_method <- sapply(strsplit(name.method$combined, split="#"), "[[", 3)
+    name.method$units <- sapply(strsplit(name.method$combined, split="#"), "[[", 4)
     write.table(name.method, file="processed_data/cleanedChemNameMethod.txt",
                 row.names=FALSE)
     
@@ -434,7 +436,7 @@ algae[algae$lake == 'grr', 'sheet_id']
                        na.strings="NA", as.is=TRUE)
   str(storet)
   unique(storet$Activity.Medium)  # All water samples
-  unique(storet$Sample.Fraction)  # Total and Dissolved
+  unique(storet$Sample.Fraction)  # Total, Dissolved, NA
 
 # District 2 information
   district2 <- read.xls("originalData/algae/FY13WQSampleCollectionSiteLocations.xlsx", 
@@ -611,14 +613,16 @@ algae[algae$lake == 'grr', 'sheet_id']
 
 # See why there are NA units
   unique(paste(storet[is.na(storet$Units), "Result.Value.as.Text"],  # Only occur when "Not Detected"
-               storet[is.na(storet$Units),"Characteristic.Name"]))
+               storet[is.na(storet$Units),"Characteristic.Name"]))   # That is fine.
 
 # Inspect "% recovery"
-  storet[storet$Units == "% recovery", c("Characteristic.Name", "Result.Value.as.Text")]
+  table(storet[storet$Units == "% recovery", "Characteristic.Name"])  # No analytes of interest
   # omit all % recovery
+  storet <- storet[storet$Units != "% recovery", ]
 
 # Inspect "None"
-  table(storet[storet$Units == "None", c("Characteristic.Name")])  # all from pH
+  table(storet[storet$Units == "None", c("Characteristic.Name")])  # all from pH.  OK
+
 
 # Inspect "%"
   table(storet[storet$Units == "%", c("Characteristic.Name")])  # Most from DO, 1 from Total Solids
@@ -630,19 +634,27 @@ algae[algae$lake == 'grr', 'sheet_id']
 # Inspect "ft"
   table(storet[storet$Units == "ft", c("Characteristic.Name")])  # "Depth, bottom" convert to m
 
-# Inspect "mg/m3", "mg/kg", "g/cm3", "ppb"
-  table(storet[storet$Units %in% c("mg/m3", "ppb", "ug/kg", "mg/kg", "g/cm3"), c("Units", "Characteristic.Name")]) # chlorophyll. keep.
+# Inspect "mg/m3", "mg/kg", "g/cm3", "ppb", "um3/l"
+  table(storet[storet$Units %in% c("mg/m3", "ppb", "ug/kg", "mg/kg", "g/cm3", "um3/l"), c("Units", "Characteristic.Name")]) # chlorophyll. keep.
   # mg/m3 is chlorophyll. Retain units.  
   # ppb, ug/kg, and mg/kg are a variety of solutes. convert.
   # g/cm3 is "Density" and "Specific gravity".  Retain units.
+  # um3/l is biovolume. retain units.
   
-# Inspect "Acidity, hydrogen ion (H+)", "Alkalinity, total", and associated units/method
-  table(storet[storet$Characteristic.Name %in% c("Acidity, hydrogen ion (H+)", "Alkalinity, total"),
-               c("Characteristic.Name", "Units", "Analytical.Proc.ID")]) 
+# Inspect Alkalinity and associated units/method
+  storet[grepl(pattern="Alkalinity",x=storet$Characteristic.Name),
+               c("Characteristic.Name", "Units", "Analytical.Proc.ID")]
   # "Alkalinity, total" via EPA~310.2 is reported as mg/l, but according to method
   # should be mg/l CaCO3.  Change.
   
-
+# Inspect Depth
+  storet[!is.na(storet$Units) & storet$Characteristic.Name == "Depth", 
+         c("Result.Value.as.Text", "Units", "Analytical.Proc.ID")]
+  # Something isn't right here. Neither units nor characteristic.Name make sense
+  # for a Depth measurement.  Omit.  Sample depth is supplied in "Activity.Depth"
+    storet <- storet[storet$Characteristic.Name != "Depth", ]
+  
+  
 # Define desired units.  Convert most chemicals to mg/l and distances to m.
   storet$Units2 <- ifelse(storet$Units %in% c("ug/l", "ppb", "ug/kg", "mg/kg"),
                                             "mg/l",
@@ -688,17 +700,46 @@ algae[algae$lake == 'grr', 'sheet_id']
                                        ifelse(Characteristic.Name == "Nitrogen",
                                               "Kjeldahl nitrogen",
                                        ifelse(Characteristic.Name == "Nitrogen, mixed forms (NH3), (NH4), organic, (NO2) and (NO3)",
-                                              "nitrate.nitrite",
+                                              "NO2.3",
                                        ifelse(Characteristic.Name == "Phosphorus",
                                               "reactive.phosphorus",
                                        ifelse(Characteristic.Name == "Total solids",
                                               "Total suspended solids",
-                                              Characteristic.Name)))))))
+                                       ifelse(Characteristic.Name == "Alkalinity, total",
+                                              "Alkalinity, Total", 
+                                              Characteristic.Name))))))))
+
   
 # The data contain 163 reports of "Total solids" referencing APHA~2540-C.  The specified method
 # is for "total dissolved solids", however.  No way to reconcile this, so I will omit the data.
   storet <- storet[with(storet, !(Characteristic.Name == "Total solids" & 
                                     Analytical.Proc.ID == "APHA~2540-C")), ]
+  
+# Inspect Magnesium and APHA~2340B
+# Some Magnesium data reference APHA~2340B, which is a hardness method, and use mg/l CaCO3
+# This isn't correct.  Remove these 20 observations.
+  storet <- storet[with(storet, Analytical.Proc.ID != "APHA~2340B" & Characteristic.Name != "Magnesium"), ]
+  
+# Need to specify total or dissolved fraction
+# Investigate instances where Sample.Fraction == NA
+  table(storet[is.na(storet$Sample.Fraction), "Characteristic.Name.2"])
+# For many of these analytes it doesn't make sense to report a Sample.Fraction
+# Specify below
+  no.sample.fraction <- c("Density", "Depth", "Depth, bottom", "Depth, Secchi disk depth",
+                          "Dissolved oxygen (DO)", "Dissolved oxygen saturation", "pH",
+                          "Phytoplankton biovolume", "Specific conductance", "Specific gravity",
+                          "Temperature, water", "Total dissolved solids", "Total suspended solids",
+                          "Turbidity", "Alkalinity, Total")
+# Paste Sample.Fraction after Characteristic.Name.2, unless it doesn't make sense
+# to report a Sample.Fraction
+  storet$Characteristic.Name.2 <- ifelse(storet$Characteristic.Name.2 %in% no.sample.fraction,
+                                         storet$Characteristic.Name.2,
+                                  ifelse(storet$Characteristic.Name.2 == "Orthophosphate",
+                                         "Orthophosphate, Dissolved",
+                                         paste(storet$Characteristic.Name.2, 
+                                        storet$Sample.Fraction, sep=", ")))
+
+  with(storet, unique(paste(Characteristic.Name.2, Units2)))
 }
 
 # Duration & completeness of data set
