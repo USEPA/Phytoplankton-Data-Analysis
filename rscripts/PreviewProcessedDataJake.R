@@ -302,47 +302,52 @@ for(j in 1:length(unique(bioSource$lake))) {
   sum(is.na(chem$sample_date_fixed))  # No missing values
   table(chem$sample_time)  # 74 occurences of 9999
 
-  table(chem$rdate)
-
 # Pull out observations that are not included in STORET data.
 # Prior to 2000-04-03 and after 2012-08-30
-  time.index <- with(chem, (rdate < as.Date("2000-04-03") | rdate < as.Date("2000-04-03")) &
+  time.index <- with(chem, (rdate < as.Date("2000-04-03") | rdate > as.Date("2012-08-30")) &
                        rdate != as.Date("2020-01-01"))
   chem.sub <- chem[time.index, ]
-  str(chem.sub)  # 400 observations              
+  str(chem.sub)  # 1212 observations              
+
 
 # Inspect ID
-  table(nchar(chem.sub$ID))  # All are 22, 24 is expected
-  table(substr(chem.sub$ID, start=2, stop=4))  # All EFR.  
-  table(chem.sub$location)
+  table(nchar(chem.sub$ID))  # All are 22, 23, and 24.  24 is expected
+  table(substr(chem.sub$ID, start=2, stop=4))  # EFR and SRR  
   table(chem.sub$station)  # All have stations
-
   chem.sub$lake.station <- paste(chem.sub$location, chem.sub$station, sep="")
-  table(chem.sub$lake.station)  # revisit after lake names have been put together
-  table(chem.sub$sample_depth)  # all 0
+  table(chem.sub$sample_depth)  # multiple depths
+
+# Take a quick look at reported values
+  chem.sub[, c("rdate", "ID", "analyte", "result_num", "result_num2", "sheet_id")]  # Quite a lot of NA values
+  chem.sub[is.na(chem.sub$result_num),  # All result_num == NA are from sheet 1303.  FIX THIS.
+           c("rdate", "ID", "analyte", "result_num", "result_num2", "sheet_id")]
+  chem.sub[chem.sub$sheet_id == 1303, "result_num"]
 
 # CENSORED WATER CHEM DATA-------------------------------------------------------------
-# Dual censored values: microcystis
-# Few data, all censored.  Won't use in analysis
+# Dual censored values: none
   chem.sub[!is.na(chem.sub$qual1) & !is.na(chem.sub$qual2), 
        c('analyte', 'original', 'qual1', 'qual2', 'result_num2', 'result_num')
-       ]  # No dual censored microsystin values
-  table(chem.sub[chem.sub$analyte == 'Microcystin', 'original']) #  None
-
-
-# Left censored values
-  chem.sub$result_final <- chem.sub$result_num  # This vector will contain final numbers for analysis
-  table(chem.sub$qualifiers)  # None
+       ]  # No dual censored observations
+  
+# Other censoring?
+  table(chem.sub$qualifiers)  # A few.  "JJ", "UU".  Don't know what these are
+  table(chem.sub$qual1)  # 80 "<"
+  with(chem.sub[chem.sub$qual1 == "<", ], unique(paste(qual1, result_num)))  # all "<" report a MDL.
+  # Assign final number as = to result_num, but carry "<" flag
+  table(chem.sub$qual2)  # none
 
 # ND: when the data are reported as ND with a U qualifier, Matt set the value equal to -777.
   chem.sub[chem.sub$qual1 == 'ND' & !is.na(chem.sub$qual1),  # None 
        c('ID', 'analyte', 'qualifiers', 'qual1', 'detect_limit', 'original', 'result_num')]
 
+# Final value assignment
+  chem.sub$result_final <- chem.sub$result_num  #  Can ignore result_num2, which is upper censor
+
 # TAKE A LOOK AT WATER CHEM ANALYTES---------------------------------------------------
-  length(unique(chem.sub$analyte))  # 45 analytes
+  length(unique(chem.sub$analyte))  # 63 analytes
 
 # Want unique combinations of analyte, prep_method, test_method, and units
-  length(unique(with(chem.sub, paste(analyte, prep_method, test_method, units, sep = " "))))  # also 45!
+  length(unique(with(chem.sub, paste(analyte, prep_method, test_method, units, sep = " "))))  # 73!
 
   # Pull out all unique combination of "Characteristic.Name" and "Analytical.Proc.ID"
     # Write to disk for further inspection
@@ -357,63 +362,95 @@ for(j in 1:length(unique(bioSource$lake))) {
     name.method$prep_method <- sapply(strsplit(name.method$combined, split="#"), "[[", 2)
     name.method$test_method <- sapply(strsplit(name.method$combined, split="#"), "[[", 3)
     name.method$units <- sapply(strsplit(name.method$combined, split="#"), "[[", 4)
+
     write.table(name.method, file="processed_data/cleanedChemNameMethod.txt",
                 row.names=FALSE)
     
-    # Based on inspection of file (see above), the following naming conventions will be used:
-    # Code below is from STORET script.  Use consistent analyte names!
-    storet$Characteristic.Name.2 <- with(storet,
-                                         ifelse(Characteristic.Name == "Ammonia-nitrogen",
-                                                "NH4-N",
-                                                ifelse(Characteristic.Name == "Inorganic nitrogen (nitrate and nitrite)",
-                                                       "NO2.3",
-                                                       ifelse(Characteristic.Name == "Nitrogen",
-                                                              "Kjeldahl nitrogen",
-                                                              ifelse(Characteristic.Name == "Nitrogen, mixed forms (NH3), (NH4), organic, (NO2) and (NO3)",
-                                                                     "nitrate.nitrite",
-                                                                     ifelse(Characteristic.Name == "Phosphorus",
-                                                                            "reactive.phosphorus",
-                                                                            ifelse(Characteristic.Name == "Total solids",
-                                                                                   "Total suspended solids",
-                                                                                   Characteristic.Name)))))))
-
+  # Based on inspection of file (see above), the following naming conventions will be used:
+  # Analyte names below are consistent with STORET formatting.  Must use consistent analyte names!   
+    chem.sub.analyte.names <- read.table("processed_data/cleanedChemNameMethodCorrected.txt", 
+                                         header=TRUE, sep="\t",as.is=TRUE, na.string = "", comment.char="")
+    names.index <- match(chem.sub$analyte, chem.sub.analyte.names$analyte)  # position of each analyte name
+  # in each row of chem.sub in cleanedChemNameMethod.txt
+    chem.sub$analyte.2 <- ifelse(is.na(chem.sub.analyte.names$analyte.2[names.index]),
+                                 chem.sub$analyte,
+                                 chem.sub.analyte.names$analyte.2[names.index])
+#############I think the above replaces all the analyte name code below!!!!!!!!!!!!
+    chem.sub$analyte.2 <- {with(chem.sub,
+                                ifelse(grepl(pattern="Alkalinity", x=analyte),
+                                       "Alkalinity, Total",
+                                         ifelse(analyte == "Ammonia, Nitrogen, Dissolved (as N)",
+                                                 "NH4-N, Dissolved",
+                                                ifelse(analyte == "Ammonia Nitrogen",
+                                                       "NH4-N, NA",
+                                                       ifelse(analyte=="Ammonia, Nitrogen, Total (as N)",
+                                                              "NH4-N, Total",
+                                                              
+                                         ifelse(analyte == "Carbon, Dissolved Organic",
+                                                 "Organic carbon, Dissolved",
+                                         ifelse(analyte == "Carbon, Organic, Total",
+                                                 "Organic carbon, Total",
+                                         ifelse(analyte == "Nitrite+Nitrate Nitrogen, Dissolved",
+                                                 "NO2.3-N, Dissolved",
+                                         ifelse(analyte == "Oxygen, Dissolved",
+                                                 "Dissolved oxygen (DO)",
+                                         ifelse(analyte == "Phosphorus, Dissolved",
+                                                "reactive.phosphorus, Dissolved",
+                                         ifelse(analyte == "Phosphorus, Total",
+                                                 "reactive.phosphorus, Total",
+                                         ifelse(analyte == "Residue, Dissolved",
+                                                 "Total dissolved solids",
+                                         ifelse(analyte == "Residue, Suspended",
+                                                 "Total suspended solids",
+                                         ifelse(analyte == "Residue, Total",
+                                                 "Total solids",
+                                         ifelse(analyte == "Specific Conductance @ 25C",
+                                                 "Specific conductance",
+                                         ifelse(analyte == "Temperature, Water",
+                                                  "Temperature, water",
+                                         ifelse(analyte == "Kjeldahl Nitrogen, Total (as N)",
+                                                  "Kjeldahl nitrogen-N, Total",
+                                         ifelse(analyte == "Nitrite+Nitrate Nitrogen, Total",
+                                                  "NO2.3-N, Total",
+                                         ifelse(analyte == "Phosphorus - Dissolved Inorganic",
+                                                  "reactive.phosphorus, Dissolved",
+                                         ifelse(analyte == "Phosphorus - Total Inorganic",
+                                                  "reactive.phosphorus, Total",
+                                         ifelse(analyte == "Silica - Dissolved (SiO2)",
+                                                  "Silica, Dissolved",
+                                         ifelse(analyte == "Hardness, Total (as CaCO3)",
+                                                  "Hardness, Ca, Mg, Total",
+                                                  analyte))))))))))))))))))))
+}
               
-# Look at N species
-  unique(chem[grep(pattern='Nitrogen', x=chem$analyte), 'analyte'])
-  chem[chem$analyte == 'Ammonia Nitrogen', 'analyte'] = 'Nitrogen, Ammonia'
-  chem[chem$analyte == 'Nitrate+Nitrite Nitrogen' | chem$analyte == 'Nitrate + Nitrite Nitrogen',
-       'analyte'] = 'Nitrogen, Nitrate-Nitrite'
+  # Remove "Atrazine, Sediment (wet wt.)"
+    chem.sub <- chem.sub[chem.sub$analyte.2 != "Atrazine, Sediment (wet wt.)", ]
 
-# Create a list of species I want to retain for analysis
-  analyte.list <- c('Alkalinity, Total (As CaCO3)',
-                    'Nitrogen, Ammonia',
-                    'Nitrogen, Kjeldahl, Total',
-                    'Organic Carbon, Dissolved',
-                    'Phosphorus, Total (As P)',
-                    'Total Hardness (As CaCO3)',
-                    'Total Organic Carbon',
-                    'Alkalinity',
-                    'Dissolved Organic Carbon',
-                    "Nitrogen, Nitrate-Nitrite",
-                    "Nitrogen Kjeldahl",
-                    "Phosphorus",
-                    "Total Dissolved Solids",
-                    "Total Hardness",
-                    "Total Suspended Solids",
-                    "Chlorophyll a",
-                    "Atrazine",
-                    "Temp.Celsius",
-                    "D.O...mg.L.",                 
-                    "SP.Cond..UMHO.cm.",
-                    "pH",
-                    "Turbidity..NTU.",             
-                    "Secchi..Inches.",
-                    'Nitrate Nitrogen'
-                    )
-  chem.short <- chem[chem$analyte %in% analyte.list, ] 
+# DEAL WITH UNITS
+# First, strip trailing spaces from units
+  chem.sub$units <- gsub("^\\s+|\\s+$", "", chem.sub$units)  # strip leading and trailing spaces
+
+# Change names as necessary
+  chem.sub$units2 <- with(chem.sub,
+                          ifelse(analyte.2 == "Alkalinity, Total",
+                                 "mg/l CaCO3",  # was reported as mg/L
+                          ifelse(units == "mg/L" & analyte.2 != "Alkalinity, Total",  # Fixed alkalinity above
+                                 "mg/l",
+                          ifelse(units == "ug/L",
+                                 "mg/l",
+                          ifelse(units == "units",  # reported units for pH
+                                "none",  # units reported in storet
+                                 units)))))
+
+# Convert values based on units
+  chem.sub$result_final <- with(chem.sub, 
+                                ifelse(units == "ug/L" & units2 == "mg/l",
+                                       result_final/1000,
+                                       result_final))  
+  
 # Remove commas from analyte names, confuses ggplot
   unique(sub(pattern=',', replacement=".", x=chem.short$analyte))
-str(chem.short)
+  str(chem.short)
 # Cast into wide format
   head(dcast(chem.short, ID ~ analyte, 
              value.var = "result_final"))  # Defaults to length,  Must be duplicates
@@ -425,13 +462,9 @@ str(chem.short)
   chem.short[chem.short$ID == "2EFR20004201108231100010" & chem.short$analyte ==  "Dissolved Organic Carbon",]
 
 
-algae <- read.delim("processed_data/cleaned_algae_20140422.txt", 
-                    as.is=TRUE, 
-                    header = TRUE)
-unique(algae$lake)
-algae[algae$lake == 'grr', 'sheet_id']
-
 # STORET DATA----------------------
+# Read data and clean things up a bit
+{
   storet <- read.csv("processed_data/storet.060514.csv",
                        na.strings="NA", as.is=TRUE)
   str(storet)
@@ -476,6 +509,7 @@ algae[algae$lake == 'grr', 'sheet_id']
   # Remove stations that represent inflow or outflow
   # Stations begining with "1" represent in or outflows
     storet <- storet[substr(storet$Station.ID, 5, 5) != 1, ]
+}
 
 # Result.Value.as.Text
 # Clean up character values and replace "Not Detected" with dl for analytes of interest.
@@ -654,12 +688,14 @@ algae[algae$lake == 'grr', 'sheet_id']
   # for a Depth measurement.  Omit.  Sample depth is supplied in "Activity.Depth"
     storet <- storet[storet$Characteristic.Name != "Depth", ]
   
-  
+}  
+
 # Define desired units.  Convert most chemicals to mg/l and distances to m.
   storet$Units2 <- ifelse(storet$Units %in% c("ug/l", "ppb", "ug/kg", "mg/kg"),
                                             "mg/l",
                                ifelse(storet$Units %in% c("in", "ft"), "m",
-                               ifelse(storet$Analytical.Proc.ID == "USEPA~310.2",
+                               ifelse(storet$Analytical.Proc.ID == "USEPA~310.2" |
+                                        storet$Analytical.Proc.ID == "APHA~2320",
                                       "mg/l CaCO3",  # alkalinity initially reported as mg/l
                                       storet$Units)))
 # Convert original Result.Value.as.Text to new units when necessary.
@@ -675,7 +711,7 @@ algae[algae$lake == 'grr', 'sheet_id']
                                        ifelse(Units == "ft",
                                                Result.Value/3.28, # foot to meters
                                                Result.Value))))  # if none of the above, don't change
-}
+
 
 # Analyte names
 {
@@ -698,7 +734,7 @@ algae[algae$lake == 'grr', 'sheet_id']
                                        ifelse(Characteristic.Name == "Inorganic nitrogen (nitrate and nitrite)",
                                               "NO2.3",
                                        ifelse(Characteristic.Name == "Nitrogen",
-                                              "Kjeldahl nitrogen",
+                                              "Kjeldahl nitrogen-N",
                                        ifelse(Characteristic.Name == "Nitrogen, mixed forms (NH3), (NH4), organic, (NO2) and (NO3)",
                                               "NO2.3",
                                        ifelse(Characteristic.Name == "Phosphorus",
@@ -738,8 +774,18 @@ algae[algae$lake == 'grr', 'sheet_id']
                                          "Orthophosphate, Dissolved",
                                          paste(storet$Characteristic.Name.2, 
                                         storet$Sample.Fraction, sep=", ")))
+  
+# Dissolved or Total silica
+# 251 observations where Sample.Fraction is reported as NA from two different methods 
+# Not sure what to do with these.
+  table(storet[storet$Characteristic.Name.2 == "Silica, NA", 
+               c("Analytical.Proc.ID", "Characteristic.Name.2")])
+# 13 observations where Sample.Fraction is reported as Total
+  table(storet[storet$Characteristic.Name.2 == "Silica, Total", 
+               c("Analytical.Proc.ID", "Characteristic.Name.2")])  
 
-  with(storet, unique(paste(Characteristic.Name.2, Units2)))
+  
+  with(storet, unique(paste(Characteristic.Name.2, Units2)))[order(with(storet, unique(paste(Characteristic.Name.2, Units2))))]
 }
 
 # Duration & completeness of data set
@@ -792,7 +838,6 @@ algae[algae$lake == 'grr', 'sheet_id']
     dev.off()
 
 
-
-
-"Station.ID", "Activity.Start", "Activity.Depth", "Characteristic.Name", "Sample.Fraction",
-"Result.Value.as.Text", "Units", "lake", 
+foo <- LETTERS[1:10]
+doo <- LETTERS[c(5,7,2,6,9,6,4,6,8,6)]
+match(doo, foo)
