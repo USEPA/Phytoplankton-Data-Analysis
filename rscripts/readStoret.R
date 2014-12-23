@@ -75,6 +75,9 @@
   table(nchar(storet$ID))  # Good, mostly 24.  23 can be attributed to unusual, but correct, site names.
 
 # CLEAN UP MEASUREMENT VALUES AND ADDRESS DETECTION LIMIT ISSUES--------------
+# Much of the dl stuff below turns out to be unnecessary.  Although there are 9592 reports of 
+# "below detection", turns out none of them are for analytes I care about!  Oops, spent a bunch of time
+# on this unnecessarily.
 # Result.Value.as.Text
 # Clean up character values and replace "Not Detected" with dl for analytes of interest.
   storet$Result.Value.as.Text <- gsub("^\\s+|\\s+$", "", storet$Result.Value.as.Text)  # strip leading and trailing spaces
@@ -84,6 +87,13 @@
   storet[storet$Result.Value.as.Text == "0..1", "Result.Value.as.Text"] = "0.1"
   sum(foo)  # 9592 instances of "Not Detected".  Should provide dl for analytes I care about
 
+# Take a look at additional flags
+  unique(storet$Value.Type)  # No worries
+  table(storet$Statistic.Type, useNA="ifany")  # 13,237 cases of Maximum!  Also a few minimum. 
+# Are all "Maximum Values" already flagged as "Not Detected"?
+  table(storet[storet$Statistic.Type == "Maximum", c("Result.Value.as.Text")])  # Not reported as "Not Detected".  
+# Add a qualifier for these observations below.  
+  
 # List of analytes I want to define a dl for
   analyte.list <- c("Ammonia-nitrogen", "Copper", "Inorganic nitrogen (nitrate and nitrite)",
                     "Iron", "Kjeldahl nitrogen", "Manganese", "Molybdenum", "Nitrogen", 
@@ -101,10 +111,12 @@
 # Adopted this nomenclature from water chem file Matt pulled together.
   storet$qual1 <- ifelse(storet$Characteristic.Name %in% analyte.list &
                            storet$Result.Value.as.Text == "Not Detected",
-                         "<", NA)  # All censored values are below detection limit
+                         "<",  # All these values are below detection limit
+                  ifelse(storet$Statistic.Type == "Maximum",
+                         "<",
+                         NA))  # These are left censored values.
 
 # Now, replace "Not Detected" with detection limit for all analytes of interest.
-{
   # Any Ammonia-nitrogen "Not Detected"
   storet[storet$Characteristic.Name == "Ammonia-nitrogen" & foo, # APHA~4500-NH3(D) mdl=0.03mg/L
          c("Result.Value.as.Text", "Analytical.Proc.ID")]
@@ -177,8 +189,7 @@
   storet[storet$Characteristic.Name == "Phosphorus" &  
            storet$Result.Value.as.Text == "Not Detected",
          "Result.Value.as.Text"] = "0.005"
-  
-  
+   
   # Any Silica "Not Detected"
   storet[storet$Characteristic.Name == "Silica" & foo,
          c("Result.Value.as.Text", "Analytical.Proc.ID")]  # None
@@ -202,10 +213,9 @@
            storet$Result.Value.as.Text == "Not Detected",
          "Result.Value.as.Text"] = min(storet[storet$Characteristic.Name == "Total suspended solids",
                                               "Result.Value.as.Text"])
-}
 
 # DEAL WITH UNITS.  CONVERT MOST CONSTITUENTS TO mg/l.------------------------------------
-{
+
 # First, see what units are included
   unique(storet$Units)
   
@@ -252,7 +262,6 @@
   # for a Depth measurement.  Omit.  Sample depth is supplied in "Activity.Depth"
   storet <- storet[storet$Characteristic.Name != "Depth", ]
   
-}  
 
 # Define desired units.  Convert most chemicals to mg/l and distances to m.
   storet$Units2 <- ifelse(storet$Units %in% c("ug/l", "ppb", "ug/kg", "mg/kg"),
@@ -279,7 +288,6 @@
                                        Result.Value))))  # if none of the above, don't change
 
 # ANALYTE NAMES---------------------------
-{
   # Pull out all unique combination of "Characteristic.Name" and "Analytical.Proc.ID"
   # Write to disk for further inspection
     name.method <- data.frame(stringsAsFactors=FALSE,
@@ -358,8 +366,11 @@
     with(storet, unique(paste(Characteristic.Name.2, Units2)))[order(with(storet, unique(paste(Characteristic.Name.2, Units2))))]
 
 # WRITE FINAL DATAFRAME TO .csv FILE----------------------
-
-  write.table(storet, "processed_data/storet.121914.csv", sep = ",",row.names=FALSE)
+  str(storet)
+  storet.sub <- storet[,c("Station.ID", "Station.Latitude", "Station.Longitude", "lake", "rdate",
+                          "time", "year", "depth_ft", "ID", "qual1", "Units2", "Result.Value.2",
+                          "Characteristic.Name.2")]
+  write.table(storet.sub, "processed_data/storet.122214.csv", sep = ",",row.names=FALSE)
 
 ### crashes---------------------------------------
 ### xxx <- dcast(storet, Station.ID + Date ~ Characteristic.Name )
