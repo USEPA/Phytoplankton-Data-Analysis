@@ -318,7 +318,7 @@ for(j in 1:length(unique(bioSource$lake))) {
   chem.sub[chem.sub$sheet_id != 1303 & nchar(chem.sub$ID) == 23, "ID"]  # these are OK, all have 4 character station names. 
 
 # Inspect lake
-  table(chem.sub$lake, useNA="always")  # 495 instances of NA
+  table(chem.sub$lake, useNA="always")  # 509 instances of NA
   chem.sub[is.na(chem.sub$lake), "ID"]  # Lake is identified in ID.
   chem.sub[is.na(chem.sub$lake), "lake"] = substr(chem.sub[is.na(chem.sub$lake), "ID"], start=2, stop=4)  # Assign values based on ID
 
@@ -448,6 +448,14 @@ for(j in 1:length(unique(bioSource$lake))) {
   # These were assigned an analyte.2 value of reactive.phosporus, Total
   
 
+# WRITE FINAL DATAFRAME TO .csv FILE------------
+  str(chem.sub)
+  chem.sub.selected.columns <- chem.sub["lake.station", ]
+  
+
+"Station.ID", "Station.Latitude", "Station.Longitude", "lake", "rdate",
+"time", "year", "depth_ft", "ID", "qual1", "Units2", "Result.Value.2",
+"Characteristic.Name.2"
 
 # Remove commas from analyte names, confuses ggplot
   unique(sub(pattern=',', replacement=".", x=chem.short$analyte))
