@@ -2,6 +2,7 @@
 
 # library
   library(gdata)
+  library(reshape)
   
 # READ IN STORET DATA------------------------------------
   storet <- read.delim("originalData/algae/EFR Phytoplankton Data/storet/Data_JJB_20140512_091843_RegResults.txt",
@@ -37,6 +38,7 @@
   unique(storet$lake)[!notInLD]  #TAC = Ohio River, SPC =1 record no lat long, BBC = Ohio River
   storet <- storet[!(storet$lake %in% unique(storet$lake)[!notInLD]), ]  # Remove 3 lakes above
   length(unique(storet$lake))  # 20 lakes, all in district 2, in final data set
+  storet$district <- substr(storet$Station.ID, 1, 1)
 
 # Stations
   unique(storet$Station.ID)
@@ -48,28 +50,31 @@
       district2$lake.station 
   # 157 lake.station combinations not included in District 2 routine sampling
     unique(storet[!station.index, "Station.ID"])[order(unique(storet[!station.index, "Station.ID"]))]  # Assume these are real stations
-
+  # Create "station" field that matches the definition in the Neptune PWS
+    storet$station <- with(storet, substr(Station.ID, 5, nchar(Station.ID)))
+  
 # Date and Time
   storet$rdate <- as.Date(substr(storet$Activity.Start, 1, 10), format = "%Y-%m-%d")
   table(storet$rdate, useNA="ifany")  # looks good
   storet$time <- substr(x=storet$Activity.Start,  12, 16)
+  storet$time <- gsub(":", "", storet$time)  # strip colon from time
   table(storet$time, useNA="ifany")  # looks good
   storet$year <- format(storet$rdate, "%Y")
 
 # Depth
-  storet$depth_ft <- storet$Activity.Depth
-  table(storet$depth_ft, useNA="ifany")  # Looks good, but need to add leading 0's for ID
+  storet$depth.ft <- storet$Activity.Depth
+  table(storet$depth.ft, useNA="ifany")  # Looks good, but need to add leading 0's for ID
   depthWithZeros <- with(storet,
-                         ifelse(nchar(depth_ft) == 1,
-                                      paste("00", depth_ft, sep=""),
-                         ifelse(nchar(depth_ft) == 2,
-                                      paste("0", depth_ft, sep=""),
-                                      depth_ft)))
+                         ifelse(nchar(depth.ft) == 1,
+                                      paste("00", depth.ft, sep=""),
+                         ifelse(nchar(depth.ft) == 2,
+                                      paste("0", depth.ft, sep=""),
+                                      depth.ft)))
 # Construct ID
   storet$ID <- with(storet,
                     paste(Station.ID, 
                           format(rdate, "%Y%m%d"), 
-                          gsub(":", "", time),  # strip colon from time
+                          time,  
                           depthWithZeros,
                           sep = ""))  # add depth with leading zeroes
   table(nchar(storet$ID))  # Good, mostly 24.  23 can be attributed to unusual, but correct, site names.
@@ -365,12 +370,34 @@
   # Review complete list of characteristic names and units
     with(storet, unique(paste(Characteristic.Name.2, Units2)))[order(with(storet, unique(paste(Characteristic.Name.2, Units2))))]
 
-# WRITE FINAL DATAFRAME TO .csv FILE----------------------
+# FINALIZE, SCREEN FOR NA AND DUPLICATES, AND WRITE DATAFRAME TO .csv FILE----------------------
   str(storet)
-  storet.sub <- storet[,c("Station.ID", "Station.Latitude", "Station.Longitude", "lake", "rdate",
-                          "time", "year", "depth_ft", "ID", "qual1", "Units2", "Result.Value.2",
-                          "Characteristic.Name.2")]
-  write.table(storet.sub, "processed_data/storet.122214.csv", sep = ",",row.names=FALSE)
+  storet.sub <- storet[,c("ID", "district", "lake", "station", "Station.Latitude", "Station.Longitude", "depth.ft",
+                          "rdate", "time", "Characteristic.Name.2", "Units2", "qual1",  "Result.Value.2"
+                          )]
+  names(storet.sub) <- tolower(names(storet.sub))
+  storet.sub <- rename(storet.sub, c(rdate = "date", 
+                                     characteristic.name.2 = "analyte", units2 = "units",
+                                     qual1 = "qual", result.value.2 = "result"))
+  
+# Screen for NA
+# Any rows where all 13 columns are NA?
+  na.index <- rowSums(is.na(storet.sub)) == 13  # 8781 rows of all NAs !?
+  storet.sub <- storet.sub[!na.index, ]  # Exclude rows of all NAs
+  
+# Screen for dups
+  sum(duplicated(storet.sub))  #12,937 duplicates!?
+  storet.sub <- storet.sub[!duplicated(storet.sub), ]  # remove dups
+  sum(duplicated(storet.sub[, c("id", "analyte")]))  #3614 out of 342659 observation have different values
+  # for the same "id" and "analyte".  Need to resolve this.
+  # inspect dups..http://stackoverflow.com/questions/7854433/finding-all-duplicate-rows-including-elements-with-smaller-subscripts
+  dup.index <- duplicated(storet.sub[, c("id", "analyte")]) | duplicated(storet.sub[, c("id", "analyte")], fromLast=TRUE) 
+  dups.storet.sub <- storet.sub[dup.index,] 
+  dups.storet.sub <-dups.storet.sub[with(dups.storet.sub, order(id, analyte, depth.ft)), ]
+  dups.storet.sub[1:100, c("id", "lake", "depth.ft", "date", "time", "analyte", "result")]  # Hugely different values.  How to know which is correct?
+  
+# Write .csv  
+  write.table(storet.sub, "processed_data/storet.010515.csv", sep = ",",row.names=FALSE)
 
 ### crashes---------------------------------------
 ### xxx <- dcast(storet, Station.ID + Date ~ Characteristic.Name )

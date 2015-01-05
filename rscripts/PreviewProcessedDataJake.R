@@ -293,61 +293,57 @@ for(j in 1:length(unique(bioSource$lake))) {
   head(chem)
   str(chem)
 
-# 9999 or 99999999 are used for time and date when data are not provided.  Inspect occurence.
+# Date
   table(chem$sample_date_fixed, useNA="always")  # No 999 entries, but 1069 instances of 2020-01-01
   chem$rdate <- as.Date(as.character(chem$sample_date_fixed), format = '%Y-%m-%d')
-  table(chem[chem$rdate == as.Date("2020-01-01"), "sheet_id"])  # Sheets 26, 1303, 1440
-  # Dates in sheets 26 and 1303 are unambiguous.  Dates can be found in column B
-  # of sheet 1440 as %y%m%d.
-  sum(is.na(chem$sample_date_fixed))  # No missing values
-  table(chem$sample_time)  # 74 occurences of 9999
 
 # Pull out observations that are not included in STORET data.
 # Prior to 2000-04-03 and after 2012-08-30
   time.index <- with(chem, (rdate < as.Date("2000-04-03") | rdate > as.Date("2012-08-30")) &
                        rdate != as.Date("2020-01-01"))
   chem.sub <- chem[time.index, ]
-  str(chem.sub)  # 1212 observations              
+  str(chem.sub)  # 1212 observations    
 
-
-# Inspect ID
-  unique(chem.sub$ID)  # a space in some EFR.  These are missing sample collection depth, which is reported as 0.
-  # These have all been read incorrectly from sheet 1303.  Issue #42 @ github.
-  # Lets exclude those above and look at the rest.
-  table(nchar(chem.sub[chem.sub$sheet_id != 1303, "ID"]))  # 36 IDs with 23 characters, 703 with 24 characters. 24 is expected
-  chem.sub[chem.sub$sheet_id != 1303 & nchar(chem.sub$ID) == 23, "ID"]  # these are OK, all have 4 character station names. 
-
-# Inspect lake
-  table(chem.sub$lake, useNA="always")  # 509 instances of NA
-  chem.sub[is.na(chem.sub$lake), "ID"]  # Lake is identified in ID.
-  chem.sub[is.na(chem.sub$lake), "lake"] = substr(chem.sub[is.na(chem.sub$lake), "ID"], start=2, stop=4)  # Assign values based on ID
-
+# Exlcude stations in inflows and outflows.  
+# Stations begining with "1" represent in or outflows
 # Inspect station  
   table(chem.sub$station, useNA="always")  # 36 w/out station
   chem.sub[is.na(chem.sub$station), "ID"]  # station is identified in ID.
   chem.sub[is.na(chem.sub$station), "station"] = substr(chem.sub[is.na(chem.sub$station), "ID"], start=5, stop=8)  # Assign values based on ID
+  chem.sub <- chem.sub[substr(chem.sub$station, 1, 1) != 1, ]
+  str(chem.sub)  # 659 observations
+
+# Review dates in chem.sub
+  table(chem.sub$sample_date_fixed, useNA="always")  # All good.
+
+# Time
+  table(chem.sub$sample_time)  # These all look good.  
+  # Add leading zero where needed
+  chem.sub$sample_time <- ifelse(nchar(chem.sub$sample_time) < 4,
+                                 paste(0, chem.sub$sample_time, sep=""),
+                                 chem.sub$sample_time)
   
+# Inspect ID
+  unique(chem.sub$ID)  # Look good
+  table(nchar(chem.sub$ID), useNA="always")  # 36 IDs with 23 characters, 623 with 24 characters. 24 is expected
+  chem.sub[nchar(chem.sub$ID) == 23, "ID"]  # these are OK, all have 4 character station names. 
+
+# Inspect lake
+  table(chem.sub$lake, useNA="always")  # 36 instances of NA
+  chem.sub[is.na(chem.sub$lake), "ID"]  # Lake is identified in ID.
+  chem.sub[is.na(chem.sub$lake), "lake"] = substr(chem.sub[is.na(chem.sub$lake), "ID"], start=2, stop=4)  # Assign values based on ID
+
 # Inspect depth
   table(chem.sub$sample_depth, useNA="always")  # Looks good.
-  names(chem.sub)[names(chem.sub) %in% "sample_depth"] = "depth_ft"  # Change name to be consistent with algae file
+  names(chem.sub)[names(chem.sub) %in% "sample_depth"] = "depth.ft"  # Change name to be consistent with algae file
 
-# Create year vector to be consistent with algae file
-  chem.sub$year <- format(chem.sub$rdate, "%Y")
-  table(chem.sub$year, useNA="always")  # all good
-
-# Create Disctric vector to be consistent with algae
+# Create District vector to be consistent with algae
   chem.sub$district <- substr(chem.sub$ID, start=1, stop=1)
   table(chem.sub$district, useNA="always")  # all good
 
-# Create lake.station vector to be consistent with alage
-  chem.sub$lake.station <- paste(chem.sub$lake, chem.sub$station, sep="")
-  table(chem.sub$lake.station, useNA="always")  # good
-
 # Take a quick look at reported values
-  chem.sub[, c("rdate", "ID", "analyte", "result_num", "result_num2", "sheet_id")]  # Quite a lot of NA values
-  chem.sub[is.na(chem.sub$result_num),  # All result_num == NA are from sheet 1303.  FIX THIS.
-           c("rdate", "ID", "analyte", "result_num", "result_num2", "sheet_id")]
-  chem.sub[chem.sub$sheet_id == 1303, "result_num"]
+  chem.sub[, c("rdate", "ID", "analyte", "result_num", "result_num2", "sheet_id")]  # Looks OK
+  sum(is.na(chem.sub$result_num))  # No instances of result_num == NA
 
 # CENSORED WATER CHEM DATA-------------------------------------------------------------
 # Dual censored values: none
@@ -356,8 +352,8 @@ for(j in 1:length(unique(bioSource$lake))) {
        ]  # No dual censored observations
   
 # Other censoring?
-  table(chem.sub$qualifiers)  # A few.  "JJ", "UU".  Don't know what these are
-  table(chem.sub$qual1)  # 80 "<"
+  table(chem.sub$qualifiers)  # A few.  "J", "U".  Don't know what these are
+  table(chem.sub$qual1)  # 68 "<"
   with(chem.sub[chem.sub$qual1 == "<", ], unique(paste(qual1, result_num)))  # all "<" report a MDL.
   # Assign final number as = to result_num, but carry "<" flag
   table(chem.sub$qual2)  # none
@@ -370,10 +366,10 @@ for(j in 1:length(unique(bioSource$lake))) {
   chem.sub$result_final <- chem.sub$result_num  #  Can ignore result_num2, which is upper censor
 
 # TAKE A LOOK AT WATER CHEM ANALYTES---------------------------------------------------
-  length(unique(chem.sub$analyte))  # 63 analytes
+  length(unique(chem.sub$analyte))  # 16 analytes
 
 # Want unique combinations of analyte, prep_method, test_method, and units
-  length(unique(with(chem.sub, paste(analyte, prep_method, test_method, units, sep = " "))))  # 73!
+  length(unique(with(chem.sub, paste(analyte, prep_method, test_method, units, sep = " "))))  # 16!
 
 # Pull out all unique combination of "Analyte", "prep_method", "test_method", and "units"
 # Write to disk for further inspection
@@ -396,7 +392,10 @@ for(j in 1:length(unique(bioSource$lake))) {
 # New analyte names were chosen to be consistent with those used in the storet file.  The general format is
 # "analyte, sample.fraction" where sample.fraction is total, dissolved, or NA.  New file was renamed 
 # "processed_data/cleanedChemNameMethodCorrected.txt".  Below, I read in this file and use
-# the information to update the analyte names in chem.sub.  
+# the information to update the analyte names in chem.sub.  Note that cleanedChemNameMethodCorrected.txt
+# contains many more analytes than cleanedChemNameMethod.txt.  This is a holdover from a previous version
+# where cleanedChemNameMethod.txt was written before the inflow and outflow stations were stripped.
+
   chem.sub.analyte.names <- read.table("processed_data/cleanedChemNameMethodCorrected.txt", 
                                        header=TRUE, sep="\t",as.is=TRUE, na.string = "", comment.char="")
 
@@ -408,10 +407,7 @@ for(j in 1:length(unique(bioSource$lake))) {
                                chem.sub$analyte,  # then use original name
                                chem.sub.analyte.names$analyte.2[names.index])  # else use new name from .txt file
 # inspect output
-  unique(chem.sub[, c("analyte", "analyte.2")])  # looks good!
-
-# Remove "Atrazine, Sediment (wet wt.)"
-  chem.sub <- chem.sub[chem.sub$analyte.2 != "Atrazine, Sediment (wet wt.)", ]  # sediment variable
+  unique(chem.sub[, c("analyte", "analyte.2", "units")])  # looks good!
 
 # DEAL WITH UNITS----------------------------------------
 # First, strip trailing spaces from units
@@ -437,44 +433,34 @@ for(j in 1:length(unique(bioSource$lake))) {
                                        result_final/1000,  # convert to mg/l
                                        result_final))  
 
-# Inspect duplicates
-  dups.chem.sub <- chem.sub[duplicated(chem.sub[, c('ID', 'analyte.2')]),
-                            c('ID', 'analyte.2')] # Have a handul of duplicate unique IDs.
-# Find all instances of duplicated observations
-  dups.chem.sub.all <- chem.sub[paste(chem.sub$ID, chem.sub$analyte.2) %in% paste(dups.chem.sub$ID, dups.chem.sub$analyte.2),
-           c('ID', "analyte", 'analyte.2', "result_final", "sheet_id")]  # All NA
-  dups.chem.sub.all[with(dups.chem.sub.all, order(ID, analyte.2)), ]  # these are OK.  Result of subtle differences in
-  # measurement method that led to the use of different analyte names (i.e. Phosphourus-Total vs Phosphorus- Total Inorganic).
-  # These were assigned an analyte.2 value of reactive.phosporus, Total
-  
+# FINALIZE, SCREEN FOR NA AND DUPLICATES, AND WRITE DATAFRAME TO .csv FILE----------------------
+# Extract columns of interest
+  chem.sub.selected.columns <- chem.sub[, c("ID", "district", "lake", "station", "depth.ft", "rdate", 
+                                            "sample_time", "analyte.2", "units2", "qual1", "result_final")]
+# Rename to be consistent with STORET and algae
+  chem.sub.selected.columns <- rename(chem.sub.selected.columns, 
+                                      c(ID = "id", rdate = "date", sample_time = "time",
+                                        analyte.2 = "analyte", units2 = "units",
+                                        qual1 = "qual", result_final = "result"))
+  str(chem.sub.selected.columns)
 
-# WRITE FINAL DATAFRAME TO .csv FILE------------
-  str(chem.sub)
-  chem.sub.selected.columns <- chem.sub["lake.station", ]
-  
+# Screen for NA
+# Any rows where all 11 columns are NA?
+  na.index <- rowSums(is.na(chem.sub.selected.columns)) == 11  # None
 
-"Station.ID", "Station.Latitude", "Station.Longitude", "lake", "rdate",
-"time", "year", "depth_ft", "ID", "qual1", "Units2", "Result.Value.2",
-"Characteristic.Name.2"
+# Screen for dups
+  sum(duplicated(chem.sub.selected.columns))  # None
 
-# Remove commas from analyte names, confuses ggplot
-  unique(sub(pattern=',', replacement=".", x=chem.short$analyte))
-  str(chem.short)
+# Write .csv
+  write.table(chem.sub.selected.columns, 
+              "processed_data/cleaned_wq_20150105.csv", 
+              sep = ",", row.names=FALSE)
 
-# Cast into wide format
-  head(dcast(chem.short, ID ~ analyte, 
-             value.var = "result_final"))  # Defaults to length,  Must be duplicates
-
-
-
-  chem.short[chem.short$ID == "2EFR20004201108231100010" & chem.short$analyte ==  "Dissolved Organic Carbon",]
-
-
-# STORET DATA----------------------
+# REVIEW STORET DATA----------------------
 # See readStoret.R
-  storet <- read.csv("processed_data/storet.060514.csv",
+  storet.final <- read.csv("processed_data/storet.010515.csv",
                        na.strings="NA", as.is=TRUE)
-  str(storet)
+  str(storet.final)
 
 
 # Duration & completeness of data set
@@ -526,7 +512,30 @@ for(j in 1:length(unique(bioSource$lake))) {
     }
     dev.off()
 
+# MERGE STORET AND PROCESSED CHEM DATA FROM JADE AND DREW------------------
+# Read chem data
+  chem.processed <- read.csv("processed_data/cleaned_wq_20150105.csv",
+                   na.strings="NA", as.is=TRUE)
+  str(chem.processed)
 
-foo <- LETTERS[1:10]
-doo <- LETTERS[c(5,7,2,6,9,6,4,6,8,6)]
-match(doo, foo)
+# rbind
+  all.chem <- rbind(subset(x=storet.final, select=-c(station.latitude, station.longitude)), # exlcude lat/lon
+                    chem.processed)
+  str(all.chem)
+
+  sum(duplicated(all.chem[, c("id", "analyte")]))  #3614!
+
+# Cast into wide format
+  library(data.table)
+  DT <- data.table(all.chem)
+  setkey(DT,"id")
+  
+  
+str(dcast.data.table(DT, id ~ analyte, value.var = "result"))
+    
+  ); sss
+
+# Remove commas from analyte names, confuses ggplot
+all.chem$analyte <- sub(pattern=',', replacement=".", x=all.chem$analyte)
+str(all.chem)
+  ggplot(all.chem, aes())
