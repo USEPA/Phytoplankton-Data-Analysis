@@ -522,20 +522,53 @@ for(j in 1:length(unique(bioSource$lake))) {
   all.chem <- rbind(subset(x=storet.final, select=-c(station.latitude, station.longitude)), # exlcude lat/lon
                     chem.processed)
   str(all.chem)
-
   sum(duplicated(all.chem[, c("id", "analyte")]))  #0!
 
-# Cast into wide format
-  library(data.table)
-  DT <- data.table(all.chem)
-  setkey(DT,"id")
-  
-  
-str(dcast.data.table(DT, id ~ analyte, value.var = "result"))
-    
- 
+# A bit of formatting
+  all.chem$rdate <- as.Date(all.chem$date)
+  all.chem$year <- format(all.chem$rdate, "%Y")
+
+
+# Duration & completeness of data set
+  date.yr.lk.all.chem <- aggregate(all.chem$rdate, by=list(lake=all.chem$lake, year=all.chem$year), FUN=function(X1) {length(unique(X1))})
+  date.yr.lk.all.chem <- dcast(date.yr.lk.all.chem, lake ~ year, value.var="x")  # Good
+  date.yr.lk.all.chem$total <- apply(subset(date.yr.lk.all.chem,  select = -c(lake)), MARGIN=1, FUN=sum, na.rm=T)  # Calculate total per lake
+  year.range <- min(as.numeric(names(date.yr.lk.all.chem)), na.rm=T):2014  # Define range of years included in data
+  missing.years <- year.range[!(year.range %in% as.numeric(names(date.yr.lk.all.chem)))]  # Define missing years
+  date.yr.lk.all.chem[,as.character(missing.years)] <- NA  # Add columns for missing years
+  date.yr.lk.all.chem <- date.yr.lk.all.chem[, c("lake", as.character(sort(as.numeric(names(date.yr.lk.all.chem)))), "total")]  # reorder columns
+  date.yr.lk.all.chem <- date.yr.lk.all.chem[with(date.yr.lk.all.chem, order(lake)), ]  # reorder rows
+  date.yr.lk.all.chem[is.na(date.yr.lk.all.chem)] = 0  # If no samples were collected, set equal to 0
+  write.table(date.yr.lk.all.chem, file="processed_data/chemObservationsSummary.txt")  # Good, extra days for DO and temp
+  date.yr.lk.all.all.chem.melt <- melt(date.yr.lk.all.chem)
+
+# Summary plot of # of sampling dates per year
+ggplot(date.yr.lk.all.chem.melt[with(date.yr.lk.all.chem.melt, variable != "total" ),], aes(value)) +
+  geom_histogram(binwidth = 0.5) +
+  xlab("Number of sampling dates per year")
+
+# Summary plot of # of sampling dates per lake
+  date.yr.lk.all.chem$lake <- factor(date.yr.lk.all.chem$lake, date.yr.lk[order(date.yr.lk.all.chem$total, decreasing=T), "lake"])  # Needed to order bars
+  ggplot(date.yr.lk.all.chem, aes(lake, total)) + geom_point() +
+    ylab("Total number of sampling dates per lake")  
+
+
+
+
+# Some plots
+  ggplot(all.chem[all.chem$analyte == "NO2.3-N, Total", ], aes(lake, result)) + geom_point()
+  ggplot(all.chem[all.chem$analyte == "NO2.3-N, NA", ], aes(lake, result)) + geom_point()
+  ggplot(all.chem[all.chem$analyte == "NO2.3-N, Dissolved", ], aes(lake, result)) + geom_point()
+
+# Convert to data.table for fast manipultaion
+library(data.table)
+all.chem.dt <- data.table(all.chem)
+setkey(all.chem.dt,"id")
 
 # Remove commas from analyte names, confuses ggplot
-all.chem$analyte <- sub(pattern=',', replacement=".", x=all.chem$analyte)
-str(all.chem)
-  ggplot(all.chem, aes())
+all.chem.dt$analyte <- sub(pattern=', ', replacement=".", x=all.chem.dt$analyte)
+
+# Cast to wide
+all.chem.dt.wide <- dcast.data.table(all.chem.dt, 
+                                     id + district + lake + station + depth.ft + date + time + qual ~ analyte, 
+                                     value.var = "result")
