@@ -1,9 +1,11 @@
 # STORET DATA
 
-# library
+# library---------------
   library(gdata)
   library(reshape)
+  library(ggplot2)
   
+
 # READ IN STORET DATA------------------------------------
   storet <- read.delim("originalData/algae/EFR Phytoplankton Data/storet/Data_JJB_20140512_091843_RegResults.txt",
                        sep="\t", na.strings="", as.is=TRUE)
@@ -96,8 +98,9 @@
   unique(storet$Value.Type)  # No worries
   table(storet$Statistic.Type, useNA="ifany")  # 13,237 cases of Maximum!  Also a few minimum. 
 # Are all "Maximum Values" already flagged as "Not Detected"?
-  table(storet[storet$Statistic.Type == "Maximum", c("Result.Value.as.Text")])  # Not reported as "Not Detected".  
-# Add a qualifier for these observations below.  
+  table(storet[storet$Statistic.Type == "Maximum", c("Result.Value.as.Text")])  # Not reported as "Not Detected".
+# Add a qualifier for these observations below. 
+  
   
 # List of analytes I want to define a dl for
   analyte.list <- c("Ammonia-nitrogen", "Copper", "Inorganic nitrogen (nitrate and nitrite)",
@@ -105,7 +108,7 @@
                     "Nitrogen, mixed forms (NH3), (NH4), organic, (NO2) and (NO3)",
                     "Phosphorus", "Silica", "Sodium", "Total solids", "Total suspended solids")
 
-# First, define the "Units" as mg/l for all instances of "Not Detected".  Currently reported as NA
+# First, define the "Units" as mg/l for all instances of "Not Detected".  Units currently reported as NA
   for (i in 1:length(analyte.list)){
     storet[storet$Characteristic.Name == analyte.list[i] &  # For each analyte I care about
              storet$Result.Value.as.Text == "Not Detected",  # Find censored observations
@@ -120,6 +123,7 @@
                   ifelse(storet$Statistic.Type == "Maximum",
                          "<",
                          NA))  # These are left censored values.
+  
 
 # Now, replace "Not Detected" with detection limit for all analytes of interest.
   # Any Ammonia-nitrogen "Not Detected"
@@ -317,21 +321,23 @@
                                                  "NO2.3-N",
                                          ifelse(Characteristic.Name == "Phosphorus",
                                                  "reactive.phosphorus",
-                                         ifelse(Characteristic.Name == "Total solids",
-                                                  "Total suspended solids",
                                          ifelse(Characteristic.Name == "Alkalinity, total",
                                                    "Alkalinity, Total",
                                          ifelse(Characteristic.Name == "Depth, Secchi disk depth",
                                                    "Secchi disk depth-m",
                                          ifelse(Characteristic.Name == "Depth, bottom",
                                                    "Depth, bottom-m",
-                                                    Characteristic.Name))))))))))
+                                                    Characteristic.Name)))))))))
   
   
   # The data contain 163 reports of "Total solids" referencing APHA~2540-C.  The specified method
   # is for "total dissolved solids", however.  No way to reconcile this, so I will omit the data.
     storet <- storet[with(storet, !(Characteristic.Name == "Total solids" & 
                                       Analytical.Proc.ID == "APHA~2540-C")), ]
+  
+  # Phytoplankton biovolume
+  # Remove all records of phytoplankton biovolume
+    storet <- storet[storet$Characteristic.Name != "Phytoplankton biovolume", ]
   
   # Inspect Magnesium and APHA~2340B
   # Some Magnesium data reference APHA~2340B, which is a hardness method, and use mg/l CaCO3
@@ -346,8 +352,8 @@
     no.sample.fraction <- c("Density", "Depth, bottom-m", "Secchi disk depth-m",
                             "Dissolved oxygen (DO)", "Dissolved oxygen saturation", "pH",
                             "Phytoplankton biovolume", "Specific conductance", "Specific gravity",
-                            "Temperature, water", "Total dissolved solids", "Total suspended solids",
-                            "Turbidity", "Alkalinity, Total")
+                            "Temperature, water", "Total solids", "Total dissolved solids", 
+                            "Total suspended solids", "Turbidity", "Alkalinity, Total")
   
   # Paste Sample.Fraction after Characteristic.Name.2, unless it doesn't make sense
   # to report a Sample.Fraction
@@ -386,18 +392,24 @@
   storet.sub <- storet.sub[!na.index, ]  # Exclude rows of all NAs
   
 # Screen for dups
-  sum(duplicated(storet.sub))  #12,937 duplicates!?
+  sum(duplicated(storet.sub))  #12,884 duplicates!?
   storet.sub <- storet.sub[!duplicated(storet.sub), ]  # remove dups
-  sum(duplicated(storet.sub[, c("id", "analyte")]))  #3614 out of 342659 observation have different values
-  # for the same "id" and "analyte".  Need to resolve this.
-  # inspect dups..http://stackoverflow.com/questions/7854433/finding-all-duplicate-rows-including-elements-with-smaller-subscripts
-  dup.index <- duplicated(storet.sub[, c("id", "analyte")]) | duplicated(storet.sub[, c("id", "analyte")], fromLast=TRUE) 
-  dups.storet.sub <- storet.sub[dup.index,] 
-  dups.storet.sub <-dups.storet.sub[with(dups.storet.sub, order(id, analyte, depth.ft)), ]
-  dups.storet.sub[1:100, c("id", "lake", "depth.ft", "date", "time", "analyte", "result")]  # Hugely different values.  How to know which is correct?
+  sum(duplicated(storet.sub[ , c("id", "analyte")])) #387 out of 340992 observation have same id and analyte
+  sum(duplicated(storet.sub[ , c("id", "analyte", "qual")])) #340, 47 have different qualifiers
+  sum(duplicated(storet.sub[ , c("id", "analyte", "result")])) #all 387 have different results
+# inspect dups, including first occurence
+# http://stackoverflow.com/questions/7854433/finding-all-duplicate-rows-including-elements-with-smaller-subscripts
+  dup.index <- duplicated(storet.sub[ , c("id", "analyte")]) | 
+    duplicated(storet.sub[ , c("id", "analyte")], fromLast=TRUE) # 773 total
+  dups.storet.sub <- storet.sub[dup.index,] # Extract id and analyte with different results
+  dups.storet.sub <-dups.storet.sub[with(dups.storet.sub, order(id, analyte, depth.ft)), ]  # sort
+  dups.storet.sub[, c("id", "lake", "depth.ft", "date", "time", "analyte", "qual", "result")]  # review.
+  table(dups.storet.sub$analyte)  # Occurs across several analytes
+  # No way to know which value is correct.  Remove all.
+  storet.sub.no.dups <- storet.sub[!dup.index, ]
   
 # Write .csv  
-  write.table(storet.sub, "processed_data/storet.010515.csv", sep = ",",row.names=FALSE)
+  write.table(storet.sub.no.dups, "processed_data/storet.010515.csv", sep = ",",row.names=FALSE)
 
 ### crashes---------------------------------------
 ### xxx <- dcast(storet, Station.ID + Date ~ Characteristic.Name )

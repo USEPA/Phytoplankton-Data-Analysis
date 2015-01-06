@@ -523,7 +523,7 @@ for(j in 1:length(unique(bioSource$lake))) {
                     chem.processed)
   str(all.chem)
 
-  sum(duplicated(all.chem[, c("id", "analyte")]))  #3614!
+  sum(duplicated(all.chem[, c("id", "analyte")]))  #0!
 
 # Cast into wide format
   library(data.table)
@@ -533,7 +533,7 @@ for(j in 1:length(unique(bioSource$lake))) {
   
 str(dcast.data.table(DT, id ~ analyte, value.var = "result"))
     
-  ); sss
+ 
 
 # Remove commas from analyte names, confuses ggplot
 all.chem$analyte <- sub(pattern=',', replacement=".", x=all.chem$analyte)
