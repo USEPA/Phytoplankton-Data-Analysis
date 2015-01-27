@@ -52,6 +52,8 @@ for( i in 1:4){
 }
 
 
+## A few site names fixes
+algae_dat$lake<- sub(pattern="grr",replacement="GRR", x=algae_dat$lake)
 ## Correct site names wherever necessary
 wb <- loadWorkbook("meta_info/Corrected Site Names.xlsx")
 nms <- readWorksheet(wb, sheet = "Algae")
@@ -69,14 +71,14 @@ algae_dat$origlakestation <- paste(algae_dat$lake,algae_dat$station,sep="")
 ## Some records already have the correct lake and station identifications
 algae_dat$corrlakestation <- ifelse(algae_dat$origlakestation %in% nms$CorrectedNo2,
                                     algae_dat$origlakestation, NA)
-sum(is.na(algae_dat$corrlakestation)) # 218364
+sum(is.na(algae_dat$corrlakestation))
 ## Other records might have an original lake and station from the Corrected Site
 ## Names file
 algae_dat$corrlakestation <- ifelse(is.na(algae_dat$corrlakestation),
                                     nms$CorrectedNo2[match(algae_dat$origlakestation,
                                                         nms$Original)],
                                     algae_dat$corrlakestation)
-sum(is.na(algae_dat$corrlakestation)) # 208713
+sum(is.na(algae_dat$corrlakestation)) 
 ## Look at NAs
 noCorSiteNm <- subset(algae_dat, is.na(corrlakestation))
 table(nchar(noCorSiteNm$lake))
@@ -87,6 +89,9 @@ algae_dat$CorrID <- ifelse(is.na(algae_dat$corrlakestation),
                        paste(substr(algae_dat$ID,1,1),algae_dat$corrlakestation,
                              substr(algae_dat$ID,10,24),
                              sep=""))
+algae_dat$CorrStation <- ifelse(is.na(algae_dat$corrlakestation),
+                            algae_dat$station,
+                            substr(algae_dat$corrlakestation,4,9))
 
 
 ### Add replicate column to data frame
@@ -255,15 +260,19 @@ i <- is.na(algae_good$taxa)
 i <- nchar(algae_good$taxa) > 50
 algae_good<- algae_good[!i, ]
 
-algae_good$lake<- sub(pattern="grr",replacement="GRR", x=algae_good$lake)
 
+## Grab the corrected columns
+keepCols <- c("CorrID","lake","CorrStation","depth_ft","date","taxa","cell_per_l",
+              "BV.um3.L","class","hab","sheet_id","qual_replicate")
+algae_good <- algae_good[,keepCols]
+names(algae_good)[which(names(algae_good) %in% c("CorrID","CorrStation"))] <- c("ID","station")
 
-## Final dup check.
+## Look at any additional duplicates
 sum(duplicated(algae_good))
+algae_good <- subset(algae_good, !duplicated(algae_good))
 
-keepCols <- c("ID","lake","station","depth_ft","date","taxa","cell_per_l",
-              "BV.um3.L","class","hab","sheet_id")
+
 ## Write cleaned algae file.
-write.table( algae_good[,keepCols ], paste("processed_data/cleaned_algae_", format(Sys.time(), "%Y%m%d"), ".csv", sep = ""), row.names=FALSE)
+write.table( algae_good, paste("processed_data/cleaned_algae_", format(Sys.time(), "%Y%m%d"), ".csv", sep = ""), row.names=FALSE)
 
 
