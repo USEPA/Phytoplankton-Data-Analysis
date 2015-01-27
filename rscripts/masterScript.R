@@ -1,7 +1,8 @@
 ### master file used to run all low level scripts.
 rm(list = ls() )
 
-homeDir <- "/Users/mattpocernich/repos/epa_2013/2013/TO 0016/analysis/Phytoplankton-Data-Analysis"
+# homeDir <- "/Users/mattpocernich/repos/epa_2013/2013/TO 0016/analysis/Phytoplankton-Data-Analysis"
+homeDir <- "~/Documents/Neptune/svn/EPA-ORD/trunk/2013/TO 0016/analysis/Phytoplankton-Data-Analysis"
 setwd(homeDir)
 
 source("rscripts/helperFunctions.R")
@@ -11,9 +12,10 @@ library(XLConnect)
 options(stringsAsFactors=FALSE)
 WRITE<- TRUE
 
-#OUTold   <- read.table("output/reducedFileSurvey.0630.csv", sep = ",", header = TRUE, as.is = TRUE)
-OUT   <- read.table("output/reducedFileSurvey.0716.csv", sep = ",", header = TRUE, as.is = TRUE)
-INFO <- read.table("output/reducedFileList.0716.csv", sep = ",", as.is = TRUE, header = TRUE)
+# OUT   <- read.table("output/reducedFileSurvey.0716.csv", sep = ",", header = TRUE, as.is = TRUE)
+# INFO <- read.table("output/reducedFileList.0716.csv", sep = ",", as.is = TRUE, header = TRUE)
+OUT   <- read.table("output/reducedFileSurvey.102514.csv", sep = ",", header = TRUE, as.is = TRUE)
+INFO <- read.table("output/reducedFileList.102514.csv", sep = ",", as.is = TRUE, header = TRUE)
 
 ### sheets not processed
 
@@ -58,7 +60,6 @@ OUT$processed[id | id2] <- TRUE
 id <- OUT$sheet %in% c("LRN Phytoplankton Details ", "LRN Phytoplankton Scores")
 OUT$skip[id] <- "Do not contain data, only sample meta data"
 OUT$processed[id] <- TRUE
-
 
 id2 <- grepl("graph", OUT$full_file_name,ignore.case=TRUE)
 # id3 <- grepl("organized", OUT$full_file_name,ignore.case=TRUE)
@@ -109,9 +110,11 @@ OUT$skip[id] <- "Files have no headers; Confirm how to calculate density and bio
 OUT$processed[id] <- TRUE
 
 OUT$script[OUT$processed] <- "Not Processed"
+
+
 ## source 
 ## contains wq data
-source("rscripts/readJade.R")
+source("rscripts/readJade.R") # Missing data - look into it
 print(sum(OUT$processed))
 
 source("rscripts/readJade0623.R")
@@ -185,15 +188,22 @@ print(sum(OUT$processed))
 xxx <- subset(OUT, ! processed)
 View(xxx)
 
+
+## Write summary status file.
 write.table(OUT, paste("processed_data/summaryStatus_", format(Sys.time(), "%Y%m%d"), ".csv", sep = ""), row.names = FALSE, sep = ",")
 xx <- paste("processed_data/algae_", format(Sys.time(), "%Y%m%d"), ".csv", sep = "")
+## Copy algae file. Still needs to be QC'd in further script.
 cmd <- paste('cp processed_data/algae.csv', xx )
 system( cmd)
 
 
-xx <- paste("processed_data/wq_", format(Sys.time(), "%Y%m%d"), ".csv", sep = "")
-cmd <- paste('cp processed_data/water_quality.csv', xx )
+## Process water quality further.
+## Water quality: merge the 'all' object from readRemain.R with the existing
+## wq file.
+source("rscripts/reformatWQ.R")
+## The above script writes the 'combined' water quality file.
 
-system( cmd)
-cmd <- paste("chmod a-w", xx)
-system( cmd )
+
+## Next, run algaeCheck.R and wqCheck.R
+## algaeCheck.R writes the 'clean' algae file, and 
+## wqCheck.R writes the 'clean' water quality file

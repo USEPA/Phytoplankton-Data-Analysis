@@ -16,7 +16,6 @@ head(xx[ii,] )
 iii <- nchar(xx$ID) == 24
 xx$location <- substr(xx$ID, 2,4)
 
-
 wq <- merge(xx, all, all=TRUE)
 
 ii <- wq$location == "" | is.na(wq$location)
@@ -30,8 +29,4 @@ wq$analyte <- sub(" \\+ ", "\\+", wq$analyte)
 
 
 
-
 write.table( wq, paste("processed_data/combined_wq_", format(Sys.time(), "%Y%m%d"), ".txt", sep = ""), sep="\t", row.names=FALSE)
-
-wqOld <- read.delim( "processed_data/combined_wq_20140509.txt", sep="\t",  header = TRUE)
-

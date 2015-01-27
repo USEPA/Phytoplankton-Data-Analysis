@@ -5,12 +5,16 @@ rm(list = ls() )
 
 ### expand memory
 options(java.parameters = "-Xmx8g" )
-source("rscripts/helperFunctions.R")
 ### mjp home Directory
 homeDir <- "/Users/mattpocernich/repos/epa_2013/2013/TO 0016/analysis/Phytoplankton-Data-Analysis"
-#  homeDir <- getwd()
+### WB home dir
+homeDir <- "~/Documents/Neptune/svn/EPA-ORD/trunk/2013/TO 0016/analysis/Phytoplankton-Data-Analysis"
 
-setwd("originalData/algae/EFR Phytoplankton Data/")
+setwd(homeDir)
+
+source("rscripts/helperFunctions.R")
+
+setwd(file.path(homeDir,"originalData/algae/EFR Phytoplankton Data/"))
 
 filesAll <- files  <- dir( recursive=TRUE,include.dirs=TRUE)
 files  <- files[grepl("xls",x=files,ignore.case=TRUE)]  ## full path
@@ -83,6 +87,6 @@ INFO$comment <- NA ## Fields to denote file to skip and reasons to skip them.
 
 INFOorig$file_origID <- 1:nrow(INFOorig)
 
-write.table( OUT, "output/reducedFileSurvey.0716.csv", sep = ",", row.names=FALSE)
-write.table( INFO, "output/reducedFileList.0716.csv", sep = ",", row.names=FALSE)
-write.table( INFOorig, "output/fullFileList.0716.csv", sep = ",", row.names=FALSE)
+write.table( OUT, "output/reducedFileSurvey.102514.csv", sep = ",", row.names=FALSE)
+write.table( INFO, "output/reducedFileList.102514.csv", sep = ",", row.names=FALSE)
+write.table( INFOorig, "output/fullFileList.102514.csv", sep = ",", row.names=FALSE)

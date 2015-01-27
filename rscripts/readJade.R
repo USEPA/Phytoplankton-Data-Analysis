@@ -3,9 +3,9 @@
 setwd("originalData/algae/EFR Phytoplankton Data/")
 
 OUT <- factor_2_character(OUT)
-id <- grepl(pattern="jade0424a", OUT$full_file_name)
+id <- grepl(pattern="jade042414", OUT$full_file_name)
 
-### subset of jade0424a files
+### subset of jade042414 files
 jade <- OUT[id  & !OUT$processed, ]
 
 ## commented out for processing work.
@@ -27,7 +27,7 @@ OUT$processed[OUT$full_file_name %in% jade$full_file_name] <- TRUE
 ### don't read sheets starting with 121.
 iii <- grep("^121", jade$sheet )
 jade$processed[iii] <- TRUE
-jade$script[iii]    <- "readJade0424a.R"
+jade$script[iii]    <- "readJade042414.R"
 jade$skip[iii]      <- "Not processed, data read by merging sample results and details."
 
 sum(jade$processed)
@@ -35,7 +35,7 @@ sum(jade$processed)
 
 xxx <- NULL
 
-files <- "jade0424a/2GRR20120912 No Biovolume Phytoplankton.xlsx"
+files <- "jade042414/2GRR20120912 No Biovolume Phytoplankton.xlsx"
 
 for(j in 1:length(files)){
   err <-    try( wb     <- loadWorkbook(files[j]) )
@@ -59,9 +59,9 @@ OUT$processed[i] <- TRUE
 
 groupA <- xxx
 ####
-jade$processed[jade$full_file_name == "jade0424a/2GRR20120912 No Biovolume Phytoplankton.xlsx"] <-TRUE
+jade$processed[jade$full_file_name == "jade042414/2GRR20120912 No Biovolume Phytoplankton.xlsx"] <-TRUE
 
-files <- "jade0424a/2BRR20120911 Phytoplankton.xls" 
+files <- "jade042414/2BRR20120911 Phytoplankton.xls" 
 ### this file contains meta information on the sheet with info on "Sample Details"
 for(j in 1:length(files)){
   err <-    try( wb     <- loadWorkbook(files[j]) )
@@ -86,7 +86,7 @@ for(j in 1:length(files)){
 groupAA <- tempBoth
 
 ###
-jade$processed[jade$full_file_name == "jade0424a/2BRR20120911 Phytoplankton.xls"] <-TRUE
+jade$processed[jade$full_file_name == "jade042414/2BRR20120911 Phytoplankton.xls"] <-TRUE
 sum(jade$processed)
 
 ### drop files with 3 digit sheet names
@@ -165,7 +165,7 @@ groupC$TotalBiovolumeum3L[i] <- groupC$Totalbiovolumeµm3L[i]
 jade$processed[jade$full_file_name %in% files] <- TRUE
 
 
-### groiupA, groupAAA, groupB, groupC
+### groupA, groupAAA, groupB, groupC
 ID <- paste(groupA$Location, groupA$Sample.Date, 
             formatC(as.numeric(groupA$Sample.Time), flag = "0", digits=4, width=4), 
             formatC(as.numeric(groupA$Sample.Depth), flag = "0", digits=3, width=3), sep = "" )

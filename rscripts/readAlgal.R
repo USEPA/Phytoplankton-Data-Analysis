@@ -2,7 +2,7 @@
 setwd("originalData/algae/EFR Phytoplankton Data/")
 
 id <- grepl("^Algal", OUT$sheetNames)
-id1 <- grepl("jade0424a", OUT$full_file_name) ## analyze new files separately
+id1 <- grepl("jade042414", OUT$full_file_name) ## analyze new files separately
 
 ### files to explicitly skip first go around.
 
