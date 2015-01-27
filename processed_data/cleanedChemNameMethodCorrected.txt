@@ -1,0 +1,74 @@
+combined	analyte	prep_method	test_method	units	analyte.2
+"Alkalinity, Total (as CaCO3)#*         #EPA310.2  #mg/L           "	"Alkalinity, Total (as CaCO3)"	*         	EPA310.2  	mg/L           	"Alkalinity, Total"
+"Ammonia, Nitrogen, Dissolved (as N)#*         #EPA350.2  #mg/L           "	"Ammonia, Nitrogen, Dissolved (as N)"	*         	EPA350.2  	mg/L           	"NH4-N, Dissolved"
+"Atrazine, Sediment (wet wt.)#*         #ELISA     #ug/L           "	"Atrazine, Sediment (wet wt.)"	*         	ELISA     	ug/L           	
+"Carbon, Dissolved Organic#*         #EPA415.1  #mg/L           "	"Carbon, Dissolved Organic"	*         	EPA415.1  	mg/L           	"Organic carbon, Dissolved"
+"Carbon, Organic, Total#*         #EPA415.1  #mg/L           "	"Carbon, Organic, Total"	*         	EPA415.1  	mg/L           	"Organc carbon, Total"
+"Chloride, Total#*         #EPA9056   #mg/L           "	"Chloride, Total"	*         	EPA9056   	mg/L           	
+"Nitrite+Nitrate Nitrogen, Dissolved#*         #EPA9056   #mg/L           "	"Nitrite+Nitrate Nitrogen, Dissolved"	*         	EPA9056   	mg/L           	"NO2.3-N, Dissolved"
+"Oxygen, Dissolved#*         #*         #mg/L           "	"Oxygen, Dissolved"	*         	*         	mg/L           	Dissolved oxygen (DO)
+pH#*         #*         #units          	pH	*         	*         	units          	
+"Phosphorus, Dissolved#*         #EPA365.1  #mg/L           "	"Phosphorus, Dissolved"	*         	EPA365.1  	mg/L           	"reactive.phosphorus, Dissolved"
+"Phosphorus, Total#*         #EPA365.1  #mg/L           "	"Phosphorus, Total"	*         	EPA365.1  	mg/L           	"reactive.phosphorus, Total"
+"Residue, Dissolved#*         #EPA160.1  #mg/L           "	"Residue, Dissolved"	*         	EPA160.1  	mg/L           	Total dissolved solids
+"Residue, Suspended#*         #EPA160.2  #mg/L           "	"Residue, Suspended"	*         	EPA160.2  	mg/L           	Total suspended solids
+"Residue, Total#*         #EPA160.3  #mg/L           "	"Residue, Total"	*         	EPA160.3  	mg/L           	Total solids
+Specific Conductance @ 25C#*         #*         #umho/cm        	Specific Conductance @ 25C	*         	*         	umho/cm        	Specific conductance
+"Sulfate, Total#*         #EPA9056   #mg/L           "	"Sulfate, Total"	*         	EPA9056   	mg/L           	
+"Temperature, Water#*         #*         #deg C          "	"Temperature, Water"	*         	*         	deg C          	"Temperature, water"
+Turbidity#*         #*         #NTU            	Turbidity	*         	*         	NTU            	
+"Kjeldahl Nitrogen, Total (as N)#*         #EPA351.2  #mg/L           "	"Kjeldahl Nitrogen, Total (as N)"	*         	EPA351.2  	mg/L           	"Kjeldahl nitrogen-N, Total"
+"Nitrite+Nitrate Nitrogen, Total#*         #EPA9056   #mg/L           "	"Nitrite+Nitrate Nitrogen, Total"	*         	EPA9056   	mg/L           	"NO2.3-N, Total"
+Phosphorus - Dissolved Inorganic#*         #EPA365.1  #mg/L           	Phosphorus - Dissolved Inorganic	*         	EPA365.1  	mg/L           	"reactive.phosphorus, Dissolved"
+Phosphorus - Total Inorganic#*         #EPA365.1  #mg/L           	Phosphorus - Total Inorganic	*         	EPA365.1  	mg/L           	"reactive.phosphorus, Total"
+Silica - Dissolved (SiO2)#*         #EPA200.7  #mg/L           	Silica - Dissolved (SiO2)	*         	EPA200.7  	mg/L           	"Silica, Dissolved"
+"Aluminum, Total#*         #EPA200.7  #ug/L           "	"Aluminum, Total"	*         	EPA200.7  	ug/L           	
+"Antimony, Total#*         #EPA200.7  #ug/L           "	"Antimony, Total"	*         	EPA200.7  	ug/L           	
+"Arsenic, Total#*         #EPA206.2  #ug/L           "	"Arsenic, Total"	*         	EPA206.2  	ug/L           	
+"Barium, Total#*         #EPA200.7  #ug/L           "	"Barium, Total"	*         	EPA200.7  	ug/L           	
+"Beryllium, Total#*         #EPA200.7  #ug/L           "	"Beryllium, Total"	*         	EPA200.7  	ug/L           	
+"Cadmium, Total#*         #EPA200.7  #ug/L           "	"Cadmium, Total"	*         	EPA200.7  	ug/L           	
+"Calcium, Total#*         #EPA200.7  #ug/L           "	"Calcium, Total"	*         	EPA200.7  	ug/L           	
+"Chromium, Total#*         #EPA200.7  #ug/L           "	"Chromium, Total"	*         	EPA200.7  	ug/L           	
+"Copper, Total#*         #EPA200.7  #ug/L           "	"Copper, Total"	*         	EPA200.7  	ug/L           	
+"Hardness, Total (as CaCO3)#*         #EPA200.7  #mg/L           "	"Hardness, Total (as CaCO3)"	*         	EPA200.7  	mg/L           	"Hardness, Ca, Mg, Total"
+"Iron, Total#*         #EPA200.7  #ug/L           "	"Iron, Total"	*         	EPA200.7  	ug/L           	
+"Lead, Total#*         #EPA200.7  #ug/L           "	"Lead, Total"	*         	EPA200.7  	ug/L           	
+"Magnesium, Total#*         #EPA200.7  #ug/L           "	"Magnesium, Total"	*         	EPA200.7  	ug/L           	
+"Manganese, Total#*         #EPA200.7  #ug/L           "	"Manganese, Total"	*         	EPA200.7  	ug/L           	
+"Mercury, Dissolved#*         #EPA245.1  #ug/L           "	"Mercury, Dissolved"	*         	EPA245.1  	ug/L           	
+"Mercury, Total#*         #EPA245.1  #ug/L           "	"Mercury, Total"	*         	EPA245.1  	ug/L           	
+"Nickel, Total#*         #EPA200.7  #ug/L           "	"Nickel, Total"	*         	EPA200.7  	ug/L           	
+"Potassium, Total#*         #EPA200.7  #ug/L           "	"Potassium, Total"	*         	EPA200.7  	ug/L           	
+"Selenium, Total#*         #EPA270.2  #ug/L           "	"Selenium, Total"	*         	EPA270.2  	ug/L           	
+"Sodium, Total#*         #EPA200.7  #ug/L           "	"Sodium, Total"	*         	EPA200.7  	ug/L           	
+"Zinc, Total#*         #EPA200.7  #ug/L           "	"Zinc, Total"	*         	EPA200.7  	ug/L           	
+Chemical Oxygen Demand#*         #EPA410.4  #mg/L           	Chemical Oxygen Demand	*         	EPA410.4  	mg/L           	
+Alkalinity#*#EPA310.2#mg/L	Alkalinity	*	EPA310.2	mg/L	"Alkalinity, Total"
+Ammonia Nitrogen#*#EPA350.1#mg/L	Ammonia Nitrogen	*	EPA350.1	mg/L	"NH4-N, NA"
+Atrazine#*#EPA4670#ppb	Atrazine	*	EPA4670	ppb	"Atrazine, NA"
+Chloride#*#EPA9056A#mg/L	Chloride	*	EPA9056A	mg/L	"Chloride, NA"
+Chlorophyll a#*#SM10200H#mg/m3	Chlorophyll a	*	SM10200H	mg/m3	"Chlorophyll a, NA"
+Dissolved Organic Carbon#*#EPA9060A#mg/L	Dissolved Organic Carbon	*	EPA9060A	mg/L	"Organic carbon, Dissolved"
+Nitrate+Nitrite Nitrogen#*#EPA353.2#mg/L	Nitrate+Nitrite Nitrogen	*	EPA353.2	mg/L	"NO2.3-N, NA"
+Nitrogen Kjeldahl#*#EPA351.2#mg/L	Nitrogen Kjeldahl	*	EPA351.2	mg/L	"Kjeldahl nitrogen-N, NA"
+Phosphorus#*#EPA365.1#ug/L	Phosphorus	*	EPA365.1	ug/L	"reactive.phosphorus, NA"
+"Solids, Total#*#SM2540B#mg/L"	"Solids, Total"	*	SM2540B	mg/L	Total solids
+Sulfate#*#EPA9056A#mg/L	Sulfate	*	EPA9056A	mg/L	"Sulfate, NA"
+Total Dissolved Solids#*#SM2540C#mg/L	Total Dissolved Solids	*	SM2540C	mg/L	Total dissolved solids
+Total Hardness#3010A#2340B/6010#mg/L	Total Hardness	3010A	2340B/6010	mg/L	"Hardness, Ca, Mg, Total"
+Total Organic Carbon#*#EPA9060A#mg/L	Total Organic Carbon	*	EPA9060A	mg/L	"Organc carbon, Total"
+Total Suspended Solids#*#SM2540M#mg/L	Total Suspended Solids	*	SM2540M	mg/L	Total suspended solids
+Total Mercury#*#EPA7470A#ug/L	Total Mercury	*	EPA7470A	ug/L	"Mercury, Total"
+"Ammonia, Nitrogen, Total (as N)#*         #EPA350.1  #mg/L           "	"Ammonia, Nitrogen, Total (as N)"	*         	EPA350.1  	mg/L           	"NH4-N, Total"
+"Atrizine, Total#*         #EPA4670   #ppb            "	"Atrizine, Total"	*         	EPA4670   	ppb            	
+"Carbon, Dissolved Organic#*         #EPA9060A  #mg/L           "	"Carbon, Dissolved Organic"	*         	EPA9060A  	mg/L           	"Organic carbon, Dissolved"
+"Carbon, Organic, Total#*         #EPA9060A  #mg/L           "	"Carbon, Organic, Total"	*         	EPA9060A  	mg/L           	"Organc carbon, Total"
+"Chloride, Total#*         #EPA9056A  #mg/L           "	"Chloride, Total"	*         	EPA9056A  	mg/L           	
+"Hardness, Total (as CaCO3)#3010A     #2340B/6010#mg/L           "	"Hardness, Total (as CaCO3)"	3010A     	2340B/6010	mg/L           	"Hardness, Ca, Mg, Total"
+"Nitrite+Nitrate Nitrogen, Total#*         #EPA353.2  #mg/L           "	"Nitrite+Nitrate Nitrogen, Total"	*         	EPA353.2  	mg/L           	"NO2.3-N, Total"
+"Phosphorus, Total#*         #EPA365.1  #ug/L           "	"Phosphorus, Total"	*         	EPA365.1  	ug/L           	"reactive.phosphorus, Total"
+"Residue, Dissolved#*         #SM2540C   #mg/L           "	"Residue, Dissolved"	*         	SM2540C   	mg/L           	Total dissolved solids
+"Residue, Suspended#*         #SM2540M   #mg/L           "	"Residue, Suspended"	*         	SM2540M   	mg/L           	Total suspended solids
+"Residue, Total#*         #SM2540B   #mg/L           "	"Residue, Total"	*         	SM2540B   	mg/L           	Total solids
+"Sulfate, Total#*         #EPA9056A  #mg/L           "	"Sulfate, Total"	*         	EPA9056A  	mg/L           	
