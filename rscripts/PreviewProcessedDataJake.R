@@ -9,7 +9,8 @@
 
 # READ IN AND FORMAT algae.csv FROM processed_data FOLDER-------------------------
 # Reading from processed_data folder
-  algae <- read.delim("processed_data/cleaned_algae_20140717.txt", as.is=TRUE, header = TRUE)
+  algae <- read.table("processed_data/cleaned_algae_20150202.csv", 
+                      as.is=TRUE, header = TRUE, sep=" ")
   head(algae)
   str(algae)
 
