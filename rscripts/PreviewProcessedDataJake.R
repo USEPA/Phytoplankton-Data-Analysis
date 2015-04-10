@@ -6,6 +6,8 @@
   library(reshape2)
   library(gdata)
   library(plyr)
+  library(dplyr)
+
 
 # READ IN AND FORMAT algae.csv FROM processed_data FOLDER-------------------------
 # Reading from processed_data folder
@@ -573,3 +575,24 @@ all.chem.dt$analyte <- sub(pattern=', ', replacement=".", x=all.chem.dt$analyte)
 all.chem.dt.wide <- dcast.data.table(all.chem.dt, 
                                      id + district + lake + station + depth.ft + date + time + qual ~ analyte, 
                                      value.var = "result")
+
+# EVALUATE BSA PHASE-1 TAXONOMY PRODUCT---------------------
+  bsa.taxa <- read.xls("originalData/algae/BSA DRAFT EXPANDED TAXA LIST V1_03_20_2015.xls", 
+                       sheet = "BSA DRAFT EXPANDED TAXA LIST V1", 
+                       na.strings = "", as.is=TRUE)
+
+# Strip leading and trailing spaces from "Actions" column
+  bsa.taxa <- mutate(bsa.taxa, Actions = gsub("^\\s+|\\s+$", "", Actions))
+
+# Review "Actions"
+  table(bsa.taxa$Actions)  # 42 deleted entries
+
+# Review "Taxa Type"
+  table(bsa.taxa$Taxa.Type)  # 43 observations of Taxa.Type == na
+  filter(bsa.taxa, Taxa.Type == "na") %>%
+  select(Actions, Accepted.Name)  # all but one are Action = "invalid deleted"
+  
+
+
+
+
