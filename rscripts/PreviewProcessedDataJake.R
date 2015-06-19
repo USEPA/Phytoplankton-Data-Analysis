@@ -66,18 +66,24 @@
   filter(algae, is.na(cell_per_l)) %>% select(BV.um3.L) %>% 
     summarize(total=sum(!is.na(BV.um3.L)))  #21 records have BV, but no cell.L
   filter(algae, is.na(cell_per_l)) %>% select(sheet_id) # all from sheet 1379. ok.  See github issue #44
-# <0, =0, or 9999
+# <0 or 9999
   filter(algae, cell_per_l < 0) %>% select(lake)  # none
   filter(algae, cell_per_l == 9999) %>% select(lake, rdate, ID, sheet_id, cell_per_l, taxa)  #only one.  EFR 2005-05-11
-  filter(algae, cell_per_l == 0) %>% select(lake)  # Have a bunch of these.  gotta fix.  
+# =0
+  filter(algae, cell_per_l == 0) %>% 
+    select(lake, cell_per_l, BV.um3.L, sheet_id)  # These all have a BV of 0 or -9999.  remove
+  algae <- filter(algae, cell_per_l != 0)
 
 # Weird values in BV.um3.L
 # NA first
   summary(algae$BV.um3.L)  #1331 NA
-  filter(algae, is.na(BV.um3.L)) %>% select(BV.um3.L, cell_per_l, hab)  # all from hab campaign with cell_per_l 
+  filter(algae, is.na(BV.um3.L)) %>% select(BV.um3.L, cell_per_l, hab)  # revisit after issue 14 is fixed
 # <0 or 9999
-  filter(algae, BV.um3.L < 0) %>% select(lake, BV.um3.L, cell_per_l)  # 248 with -9999, but all have cell_per_l
+  filter(algae, BV.um3.L < 0) %>% select(lake, BV.um3.L, cell_per_l)  # 87 with -9999, but all have cell_per_l
   filter(algae, BV.um3.L == 9999) %>% select(lake, rdate, ID, sheet_id, cell_per_l, taxa)  # none with 9999
+# = 0
+  filter(algae, BV.um3.L == 0) %>% select(lake, sheet_id, BV.um3.L, cell_per_l)  # 284, but all have cell_per_l values.  convert to NA.
+  algae <- mutate(algae, BV.um3.L=replace(BV.um3.L, BV.um3.L == 0, NA))  # replace 0 with NA 
 
 # Strip leading and trailing spaces in taxa  
   algae$taxa <- gsub("^\\s+|\\s+$", "", algae$taxa)
@@ -133,21 +139,21 @@
 
 # RECONCILE TAXONOMY AGAINST CONTRACTORS CORRECTED LIST----------------------------------------
 # MUST REVISIT AFTER WILL GENERATES UPDATED TAXA LIST
-  taxa.bsa <- read.xls("originalData/algae/BSA DRAFT EXPANDED TAXA LIST V2_06_04_2015.xls", 
-                       sheet = "BSA DRAFT EXPANDED TAXA LIST V2", as.is = TRUE)
+  taxa.bsa <- read.xls("originalData/algae/BSA DRAFT EXPANDED TAXA LIST V3_06_18_2015.xls", 
+                       sheet = "BSA DRAFT EXPANDED TAXA LIST V3", as.is = TRUE)
   length(taxa.bsa$Original.Taxa.Name)  #1834 taxa
 
-# Repetitive columns in BSA file
+# Repetitive columns in BSA file, but all are identical
   sum(taxa.bsa$Genera != taxa.bsa$Genera.1)
 
 # Are all unique taxa names in BSA's list
-  sum(!(unique(algae$taxa) %in% taxa.bsa$Original.Taxa.Name))  # 146 values not in BSA list.  Take a look
+  sum(!(unique(algae$taxa) %in% taxa.bsa$Original.Taxa.Name))  # 145 values not in BSA list.  Take a look
   filter(algae, !(algae$taxa %in% taxa.bsa$Original.Taxa.Name)) %>% # not in BSA list
     select(taxa) %>% # pull out taxa
     distinct(taxa)  # pull out unique.  Most, but not all, have a strange character.
 
 # Are all of BSA's names in the algae file?
-  sum(!(unique(taxa.bsa$Original.Taxa.Name) %in% algae$taxa))  # 199 not in algae file
+  sum(!(unique(taxa.bsa$Original.Taxa.Name) %in% algae$taxa))  # 231 not in algae file
   filter(taxa.bsa, !(taxa.bsa$Original.Taxa.Name %in% algae$taxa)) %>% # not in algae file
     select(Original.Taxa.Name) %>% # pull out taxa
     distinct(Original.Taxa.Name)  # pull out unique.  Most, but not all, have a strange character.
@@ -162,24 +168,21 @@
 # and have biovolumes
   filter(algae.bsa, BV.um3.L == -9999 | is.na((BV.um3.L))) %>% 
     select(lake) %>% 
-    summarize(total = length(lake))  # 1579 total instances where BV is NA or -9999
-  filter(algae.bsa, BV.um3.L == -9999 | is.na((BV.um3.L))) %>% 
-    select(lake, year, sheet_id) %>% 
-    distinct(lake, year, sheet_id)  # 1579 total instances where BV is NA or -9999
+    summarize(total = length(lake))  # 1690 total instances where BV is NA or -9999
   filter(algae.bsa, (BV.um3.L == -9999 | is.na((BV.um3.L))) & is.na(cell_per_l)) %>% 
     select(lake) %>% 
     summarize(total = length(lake))  # 0, all instances where BV is NA or -9999 has cell_per_l values
   needBio <- filter(algae.bsa, BV.um3.L == -9999 | is.na((BV.um3.L))) %>% 
   select(lake, rdate, Accepted.Name) %>%
-  distinct(lake, rdate, Accepted.Name)  # 373 unique lake x date x taxa occurences
+  distinct(lake, rdate, Accepted.Name)  # 317 unique lake x date x taxa occurences
 
 # Logical indicating which lake x taxa combinations in needBio are in the ld.algae where hab=F
-  bioSourceIndex <- paste(algae.bsa$lake, algae.bsa$Accepted.Name, sep="") %in%  #15125 TRUE values
+  bioSourceIndex <- paste(algae.bsa$lake, algae.bsa$Accepted.Name, sep="") %in%  #14926 TRUE values
     paste(needBio$lake, needBio$Accepted.Name, sep="")
 #   bioSource <- filter(algae.bsa, bioSourceIndex & hab != TRUE)  # this should work, but hab is coded wrong.  issue #14
   bioSource <- filter(algae.bsa, bioSourceIndex & 
                         (!is.na(BV.um3.L) & BV.um3.L != -9999 & 
-                           !is.na(cell_per_l) & cell_per_l != 9999)) %>%  # 13546 observations
+                           !is.na(cell_per_l) & cell_per_l != 9999)) %>%  # 13236 observations
   mutate(Bio.per.cell = BV.um3.L / cell_per_l)
   summary(bioSource$Bio.per.cell)
 
@@ -189,9 +192,9 @@
   notInalgae.bsa.index <- paste(needBio$lake, needBio$Accepted.Name, sep="") %in% 
       paste(algae.bsa[!is.na(algae.bsa$BV.um3.L), "lake"],
             algae.bsa[!is.na(algae.bsa$BV.um3.L), "Accepted.Name"], sep="")
-  sum(!notInalgae.bsa.index)  # 41 not in algae.bsa    
+  sum(!notInalgae.bsa.index)  # 50 not in algae.bsa    
   needBio[!notInalgae.bsa.index,]  # Which ones are missing
-  length(needBio[!notInalgae.bsa.index, "lake"])  # 41 instances
+  length(needBio[!notInalgae.bsa.index, "lake"])  # 50 instances
 
 # Revisit after issues #26, #27, and #3 have been resolved.
 # Loop to plot the measured per cell biovolumes for each lake x taxa combination
