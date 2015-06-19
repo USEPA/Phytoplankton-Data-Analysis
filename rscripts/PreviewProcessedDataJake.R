@@ -161,31 +161,47 @@
 # Merge
   algae.bsa <- merge(algae, subset(taxa.bsa, select = -c(X)), by.x = "taxa", by.y = "Original.Taxa.Name")
 
-
 # CONVERT BLUE-GREEN CELL COUNTS TO BIOVOLUME-----------------------
 # First, identify all taxa that need biovolume (should be all HAB == TRUE records)
 # Second, identify all examples where these taxa were found in routine monitoring
 # and have biovolumes
+
+# Find missing biovolumes
   filter(algae.bsa, BV.um3.L == -9999 | is.na((BV.um3.L))) %>% 
     select(lake) %>% 
     summarize(total = length(lake))  # 1690 total instances where BV is NA or -9999
   filter(algae.bsa, (BV.um3.L == -9999 | is.na((BV.um3.L))) & is.na(cell_per_l)) %>% 
     select(lake) %>% 
     summarize(total = length(lake))  # 0, all instances where BV is NA or -9999 has cell_per_l values
+# Unique lake x data x taxa combinations where BV is needed
   needBio <- filter(algae.bsa, BV.um3.L == -9999 | is.na((BV.um3.L))) %>% 
   select(lake, rdate, Accepted.Name) %>%
   distinct(lake, rdate, Accepted.Name)  # 317 unique lake x date x taxa occurences
+# Full list of where BV is needed, including reported BV and cell counts,
+# This list will go to BSA
+  MissingBiovolume <- filter(algae.bsa, BV.um3.L == -9999 | is.na((BV.um3.L))) %>% 
+                      select(lake, rdate, Accepted.Name, BV.um3.L, cell_per_l)
+  MissingBiovolumeBSA <- filter(MissingBiovolume, lake == "CCK", 
+                                Accepted.Name == "Cylindrospermopsis raciborskii")
+  write.table(MissingBiovolumeBSA, file="output/forBSA/MissingBiovolume.txt",
+              row.names = FALSE)
 
+
+
+# Find biosource data
 # Logical indicating which lake x taxa combinations in needBio are in the ld.algae where hab=F
   bioSourceIndex <- paste(algae.bsa$lake, algae.bsa$Accepted.Name, sep="") %in%  #14926 TRUE values
     paste(needBio$lake, needBio$Accepted.Name, sep="")
-#   bioSource <- filter(algae.bsa, bioSourceIndex & hab != TRUE)  # this should work, but hab is coded wrong.  issue #14
   bioSource <- filter(algae.bsa, bioSourceIndex & 
                         (!is.na(BV.um3.L) & BV.um3.L != -9999 & 
                            !is.na(cell_per_l) & cell_per_l != 9999)) %>%  # 13236 observations
-  mutate(Bio.per.cell = BV.um3.L / cell_per_l)
+               mutate(Bio.per.cell = BV.um3.L / cell_per_l)  %>%
+               select(Accepted.Name, lake, rdate, BV.um3.L, cell_per_l, Bio.per.cell)
   summary(bioSource$Bio.per.cell)
-
+# For BSA
+  BiovolumeSourceBSA <- filter(bioSource, lake == "CCK", Accepted.Name == "Cylindrospermopsis raciborskii")
+  write.table(BiovolumeSourceBSA, file="output/forBSA/BiovolumeSource.txt",
+              row.names = FALSE)
 
 # Now, see if any of the critters that need biovolume were not included in the monitoring
 # data.
@@ -221,6 +237,10 @@ for(j in 1:length(unique(bioSource$lake))) {
     dev.off()
   }
 }  # About 3 minutes
+
+# Products for BSA
+  MissingBiovolumeBSA <- filter(MissingBiovolume, lake == "CCK", Accepted.Name == "Cylindrospermopsis raciborskii")
+  BiovolumeSourceBSA <- filter(bioSource, lake == "CCK", Accepted.Name == "Cylindrospermopsis raciborskii")
 
 # A FEW VERY BASIC FIGURES-----------------------------------------
   # EFR
