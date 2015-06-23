@@ -169,7 +169,7 @@
 
 
 # Are all of BSA's names in the algae file?
-  sum(!(unique(taxa.bsa$Original.Taxa.Name) %in% algae$taxa))  # 231 not in algae file
+  sum(!(unique(taxa.bsa$Original.Taxa.Name) %in% algae$taxa))  # 18 not in algae file
   filter(taxa.bsa, !(taxa.bsa$Original.Taxa.Name %in% algae$taxa)) %>% # not in algae file
     select(Original.Taxa.Name) %>% # pull out taxa
     distinct(Original.Taxa.Name)  # pull out unique.  Most, but not all, have a strange character.
