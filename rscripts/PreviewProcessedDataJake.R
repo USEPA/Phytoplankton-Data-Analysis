@@ -7,11 +7,14 @@
   library(gdata)
   library(plyr)
   library(dplyr)
+  library(readxl)
 
 # READ IN AND FORMAT algae.csv FROM processed_data FOLDER-------------------------
 # Reading from processed_data folder
-  algae <- read.table("processed_data/cleaned_algae_20150618.csv", 
-                      as.is=TRUE, header = TRUE, sep=" ")
+# csv file has umlauts, accents, etc
+#  algae <- read.table("processed_data/cleaned_algae_20150619.csv", 
+#                      as.is=TRUE, header = TRUE, sep=" ")
+  algae <- read_excel("processed_data/cleaned_algae_20150619.xlsx")
   head(algae)
   str(algae)
 
@@ -135,22 +138,35 @@
   miss.biov <- miss.biov[with(miss.biov, order(lake, rdate)), ]  # Reorder
   length(miss.biov$lake)  # 1331 observations with cell per l, but no BV.  
   u.miss.biov <- unique(miss.biov)  # Pull out unique taxa per lake x date.  Doesn't account for depth x station
-  length(u.miss.biov[,1])  # 217 unique taxa x lake x date combination
+  length(u.miss.biov$lake)  # 217 unique taxa x lake x date combination
 
 # RECONCILE TAXONOMY AGAINST CONTRACTORS CORRECTED LIST----------------------------------------
 # MUST REVISIT AFTER WILL GENERATES UPDATED TAXA LIST
   taxa.bsa <- read.xls("originalData/algae/BSA DRAFT EXPANDED TAXA LIST V3_06_18_2015.xls", 
                        sheet = "BSA DRAFT EXPANDED TAXA LIST V3", as.is = TRUE)
   length(taxa.bsa$Original.Taxa.Name)  #1834 taxa
+# Strip leading and trailing spaces in taxa  
+  taxa.bsa$Original.Taxa.Name <- gsub("^\\s+|\\s+$", "", taxa.bsa$Original.Taxa.Name)
 
 # Repetitive columns in BSA file, but all are identical
   sum(taxa.bsa$Genera != taxa.bsa$Genera.1)
 
 # Are all unique taxa names in BSA's list
-  sum(!(unique(algae$taxa) %in% taxa.bsa$Original.Taxa.Name))  # 145 values not in BSA list.  Take a look
+  sum(!(unique(algae$taxa) %in% taxa.bsa$Original.Taxa.Name))  # 5 values not in BSA list.  Take a look
   filter(algae, !(algae$taxa %in% taxa.bsa$Original.Taxa.Name)) %>% # not in BSA list
     select(taxa) %>% # pull out taxa
-    distinct(taxa)  # pull out unique.  Most, but not all, have a strange character.
+    distinct(taxa)  # pull out unique.
+# Tweak values to conform with BSA list
+# What is the problem with Crucigenia quadrata C. Morren!?
+  algae <- mutate(algae, taxa = replace(taxa, taxa == "Acanthoceras (Attheya) zachari", 
+                                        "Acanthoceras  zachari (Attheya)"))  %>%
+    mutate(taxa = replace(taxa, taxa == "Carteria", 
+                          "Carteria #1"))  %>%
+    mutate(taxa = replace(taxa, taxa == "Crucigenia quadrata", 
+                          "Crucigenia quadrata C. Morren")) %>%
+    mutate(taxa = replace(taxa, taxa == "Trachelomonas spp", 
+                          "Trachelomonas spp."))
+
 
 # Are all of BSA's names in the algae file?
   sum(!(unique(taxa.bsa$Original.Taxa.Name) %in% algae$taxa))  # 231 not in algae file
