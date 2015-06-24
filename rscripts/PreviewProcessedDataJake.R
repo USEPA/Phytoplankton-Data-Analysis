@@ -145,8 +145,15 @@
   taxa.bsa <- read.xls("originalData/algae/BSA DRAFT EXPANDED TAXA LIST V3_06_18_2015.xls", 
                        sheet = "BSA DRAFT EXPANDED TAXA LIST V3", as.is = TRUE)
   length(taxa.bsa$Original.Taxa.Name)  #1834 taxa
+
 # Strip leading and trailing spaces in taxa  
   taxa.bsa$Original.Taxa.Name <- gsub("^\\s+|\\s+$", "", taxa.bsa$Original.Taxa.Name)
+# Inspect for duplicate Original.Taxa.Name
+  sum(duplicated(taxa.bsa$Original.Taxa.Name))  #3
+  filter(taxa.bsa, duplicated(taxa.bsa$Original.Taxa.Name) | # view specifics
+           duplicated(taxa.bsa$Original.Taxa.Name, fromLast = TRUE)) %>%
+    select(Original.Taxa.Name, Accepted.Name)
+  taxa.bsa <- filter(taxa.bsa, !duplicated(Original.Taxa.Name))
 
 # Repetitive columns in BSA file, but all are identical
   sum(taxa.bsa$Genera != taxa.bsa$Genera.1)
@@ -157,16 +164,29 @@
     select(taxa) %>% # pull out taxa
     distinct(taxa)  # pull out unique.
 # Tweak values to conform with BSA list
-# What is the problem with Crucigenia quadrata C. Morren!?
+# What is the problem with Crucigenia quadrata C. Morren!?  I see the value in BSA's excell sheet
+  filter(taxa.bsa, grepl(pattern = "quadrata", x = Original.Taxa.Name)) %>%
+    select(Original.Taxa.Name)# Here it is
+# Lets make sure there are no weird invisible symbols in taxa name for value in two datasets
+  bad.taxa.index <- grepl(pattern = "quadrata", x = taxa.bsa$Original.Taxa.Name)
+  taxa.bsa[bad.taxa.index, "Original.Taxa.Name"] = "Crucigenia quadrata C. Morren"
+  bad.taxa.index <- grepl(pattern = "quadrata", x = algae$taxa)
+  algae[bad.taxa.index, "taxa"] = "Crucigenia quadrata C. Morren"
+# Now check for mismatches
+  filter(algae, !(algae$taxa %in% taxa.bsa$Original.Taxa.Name)) %>% # not in BSA list
+    select(taxa) %>% # pull out taxa
+    distinct(taxa)  # pull out unique.  Only 3.  fix manually
+
   algae <- mutate(algae, taxa = replace(taxa, taxa == "Acanthoceras (Attheya) zachari", 
                                         "Acanthoceras  zachari (Attheya)"))  %>%
     mutate(taxa = replace(taxa, taxa == "Carteria", 
                           "Carteria #1"))  %>%
-    mutate(taxa = replace(taxa, taxa == "Crucigenia quadrata", 
-                          "Crucigenia quadrata C. Morren")) %>%
     mutate(taxa = replace(taxa, taxa == "Trachelomonas spp", 
                           "Trachelomonas spp."))
-
+# Now check for mismatches
+  filter(algae, !(algae$taxa %in% taxa.bsa$Original.Taxa.Name)) %>% # not in BSA list
+    select(taxa) %>% # pull out taxa
+    distinct(taxa)  # pull out unique.  None, got them all.
 
 # Are all of BSA's names in the algae file?
   sum(!(unique(taxa.bsa$Original.Taxa.Name) %in% algae$taxa))  # 18 not in algae file
@@ -175,7 +195,10 @@
     distinct(Original.Taxa.Name)  # pull out unique.  Most, but not all, have a strange character.
 
 # Merge
-  algae.bsa <- merge(algae, subset(taxa.bsa, select = -c(X)), by.x = "taxa", by.y = "Original.Taxa.Name")
+  algae.bsa <- merge(algae, subset(taxa.bsa, select = -c(X)),  # #obs should = that in algae.
+                     by.x = "taxa", 
+                     by.y = "Original.Taxa.Name")
+
 
 # CONVERT BLUE-GREEN CELL COUNTS TO BIOVOLUME-----------------------
 # First, identify all taxa that need biovolume (should be all HAB == TRUE records)
@@ -185,48 +208,38 @@
 # Find missing biovolumes
   filter(algae.bsa, BV.um3.L == -9999 | is.na((BV.um3.L))) %>% 
     select(lake) %>% 
-    summarize(total = length(lake))  # 1690 total instances where BV is NA or -9999
+    summarize(total = length(lake))  # 1702 total instances where BV is NA or -9999
   filter(algae.bsa, (BV.um3.L == -9999 | is.na((BV.um3.L))) & is.na(cell_per_l)) %>% 
     select(lake) %>% 
     summarize(total = length(lake))  # 0, all instances where BV is NA or -9999 has cell_per_l values
 # Unique lake x data x taxa combinations where BV is needed
   needBio <- filter(algae.bsa, BV.um3.L == -9999 | is.na((BV.um3.L))) %>% 
   select(lake, rdate, Accepted.Name) %>%
-  distinct(lake, rdate, Accepted.Name)  # 317 unique lake x date x taxa occurences
+  distinct(lake, rdate, Accepted.Name)  # 328 unique lake x date x taxa occurences
 # Full list of where BV is needed, including reported BV and cell counts,
 # This list will go to BSA
   MissingBiovolume <- filter(algae.bsa, BV.um3.L == -9999 | is.na((BV.um3.L))) %>% 
                       select(lake, rdate, Accepted.Name, BV.um3.L, cell_per_l)
-  MissingBiovolumeBSA <- filter(MissingBiovolume, lake == "CCK", 
-                                Accepted.Name == "Cylindrospermopsis raciborskii")
-  write.table(MissingBiovolumeBSA, file="output/forBSA/MissingBiovolume.txt",
-              row.names = FALSE)
-
-
 
 # Find biosource data
 # Logical indicating which lake x taxa combinations in needBio are in the ld.algae where hab=F
-  bioSourceIndex <- paste(algae.bsa$lake, algae.bsa$Accepted.Name, sep="") %in%  #14926 TRUE values
+  bioSourceIndex <- paste(algae.bsa$lake, algae.bsa$Accepted.Name, sep="") %in%  #16060 TRUE values
     paste(needBio$lake, needBio$Accepted.Name, sep="")
   bioSource <- filter(algae.bsa, bioSourceIndex & 
                         (!is.na(BV.um3.L) & BV.um3.L != -9999 & 
-                           !is.na(cell_per_l) & cell_per_l != 9999)) %>%  # 13236 observations
+                           !is.na(cell_per_l) & cell_per_l != 9999)) %>%  # 14358 observations
                mutate(Bio.per.cell = BV.um3.L / cell_per_l)  %>%
                select(Accepted.Name, lake, rdate, BV.um3.L, cell_per_l, Bio.per.cell)
   summary(bioSource$Bio.per.cell)
-# For BSA
-  BiovolumeSourceBSA <- filter(bioSource, lake == "CCK", Accepted.Name == "Cylindrospermopsis raciborskii")
-  write.table(BiovolumeSourceBSA, file="output/forBSA/BiovolumeSource.txt",
-              row.names = FALSE)
+
 
 # Now, see if any of the critters that need biovolume were not included in the monitoring
 # data.
   notInalgae.bsa.index <- paste(needBio$lake, needBio$Accepted.Name, sep="") %in% 
       paste(algae.bsa[!is.na(algae.bsa$BV.um3.L), "lake"],
             algae.bsa[!is.na(algae.bsa$BV.um3.L), "Accepted.Name"], sep="")
-  sum(!notInalgae.bsa.index)  # 50 not in algae.bsa    
+  sum(!notInalgae.bsa.index)  # 51 do not have corresponding BV in algae.bsa    
   needBio[!notInalgae.bsa.index,]  # Which ones are missing
-  length(needBio[!notInalgae.bsa.index, "lake"])  # 50 instances
 
 # Revisit after issues #26, #27, and #3 have been resolved.
 # Loop to plot the measured per cell biovolumes for each lake x taxa combination
