@@ -189,7 +189,7 @@
     distinct(taxa)  # pull out unique.  None, got them all.
 
 # Are all of BSA's names in the algae file?
-  sum(!(unique(taxa.bsa$Original.Taxa.Name) %in% algae$taxa))  # 18 not in algae file
+  sum(!(unique(taxa.bsa$Original.Taxa.Name) %in% algae$taxa))  # 89 not in filtered algae file
   filter(taxa.bsa, !(taxa.bsa$Original.Taxa.Name %in% algae$taxa)) %>% # not in algae file
     select(Original.Taxa.Name) %>% # pull out taxa
     distinct(Original.Taxa.Name)  # pull out unique.  Most, but not all, have a strange character.
@@ -212,17 +212,21 @@
   filter(algae.bsa, (BV.um3.L == -9999 | is.na((BV.um3.L))) & is.na(cell_per_l)) %>% 
     select(lake) %>% 
     summarize(total = length(lake))  # 0, all instances where BV is NA or -9999 has cell_per_l values
-# Unique lake x data x taxa combinations where BV is needed
-  needBio <- filter(algae.bsa, BV.um3.L == -9999 | is.na((BV.um3.L))) %>% 
+# Unique lake x data x taxa combinations where BV is needed.
+# Exclude Accepted.Name == "na".  These are case where species level ID was not possible, but
+# typically group level (i.e., diatom, BG) was possible.
+  needBio <- filter(algae.bsa, (BV.um3.L == -9999 | is.na(BV.um3.L)) & Accepted.Name != "na") %>% 
   select(lake, rdate, Accepted.Name) %>%
-  distinct(lake, rdate, Accepted.Name)  # 328 unique lake x date x taxa occurences
+  distinct(lake, rdate, Accepted.Name)  # 324 unique lake x date x taxa occurences
 # Full list of where BV is needed, including reported BV and cell counts,
 # This list will go to BSA
-  MissingBiovolume <- filter(algae.bsa, BV.um3.L == -9999 | is.na((BV.um3.L))) %>% 
+  MissingBiovolume <- filter(algae.bsa, (BV.um3.L == -9999 | is.na(BV.um3.L)) & Accepted.Name != "na") %>% 
                       select(lake, rdate, Accepted.Name, BV.um3.L, cell_per_l)
+  write.table(MissingBiovolume, file="output/forBSA/MissingBiovolume.txt", row.names = FALSE)
 
 # Find biosource data
-# Logical indicating which lake x taxa combinations in needBio are in the ld.algae where hab=F
+# Logical indicating which lake x taxa combinations in needBio are in the algae file
+# This goes to BSA
   bioSourceIndex <- paste(algae.bsa$lake, algae.bsa$Accepted.Name, sep="") %in%  #16060 TRUE values
     paste(needBio$lake, needBio$Accepted.Name, sep="")
   bioSource <- filter(algae.bsa, bioSourceIndex & 
@@ -231,6 +235,7 @@
                mutate(Bio.per.cell = BV.um3.L / cell_per_l)  %>%
                select(Accepted.Name, lake, rdate, BV.um3.L, cell_per_l, Bio.per.cell)
   summary(bioSource$Bio.per.cell)
+  write.table(bioSource, file="output/forBSA/BiovolumeSource.txt", row.names = FALSE)
 
 
 # Now, see if any of the critters that need biovolume were not included in the monitoring
@@ -267,9 +272,13 @@ for(j in 1:length(unique(bioSource$lake))) {
   }
 }  # About 3 minutes
 
-# Products for BSA
-  MissingBiovolumeBSA <- filter(MissingBiovolume, lake == "CCK", Accepted.Name == "Cylindrospermopsis raciborskii")
-  BiovolumeSourceBSA <- filter(bioSource, lake == "CCK", Accepted.Name == "Cylindrospermopsis raciborskii")
+# Need to deal with instances where Accepted.Name == "na" and cell counts, but not biovolume,
+# is reported
+  MissingBiovolume.na <- filter(algae.bsa, (BV.um3.L == -9999 | is.na(BV.um3.L)) & Accepted.Name == "na") %>% 
+    select(lake, rdate, taxa, Accepted.Name, Empire, Kingdom, Phylum..Division., Class, Order, Family,
+           Genera.1, Species.1, BV.um3.L, cell_per_l)
+  write.table(MissingBiovolume.na, file="output/forBSA/MissingBiovolume.na.txt", row.names = FALSE)
+
 
 # A FEW VERY BASIC FIGURES-----------------------------------------
   # EFR
