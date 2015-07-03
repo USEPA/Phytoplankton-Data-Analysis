@@ -279,6 +279,16 @@ for(j in 1:length(unique(bioSource$lake))) {
            Genera.1, Species.1, BV.um3.L, cell_per_l)
   write.table(MissingBiovolume.na, file="output/forBSA/MissingBiovolume.na.txt", row.names = FALSE)
 
+# Use BSA's per cell biovolume estimates to convert cell counts to biovolume
+  bsa.bv <-  read.xls("originalData/algae/Missing Biovolume - OUTPUT.xlsx", 
+                      sheet = "Missing Biovolume - OUTPUT", as.is = TRUE)
+  bsa.bv$rdate <- as.Date(bsa.bv$Date, format ="%Y-%m-%d")
+  str(bsa.bv)
+# Gotta merge with algae.bsa.  Select cells that need bv estimate
+  filter(algae.bsa, 
+         lake %in% bsa.bv$Lake, rdate %in% bsa.bv$rdate, Accepted.Name %in% bsa.bv$Accepted.Name, 
+         (BV.um3.L == -9999 | is.na(BV.um3.L))) %>%
+  select(BV.um3.L, cell_per_l)
 
 # A FEW VERY BASIC FIGURES-----------------------------------------
   # EFR
