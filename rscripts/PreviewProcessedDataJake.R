@@ -8,27 +8,35 @@
   library(plyr)
   library(dplyr)
   library(readxl)
+  options(dplyr.print_max = 1e9)  # to print entire tbl_df created via dplyr package
 
 # READ IN AND FORMAT algae.csv FROM processed_data FOLDER-------------------------
 # Reading from processed_data folder
-# csv file has umlauts, accents, etc
-#  algae <- read.table("processed_data/cleaned_algae_20150619.csv", 
+# csv file has umlauts, accents, that cause problems.  Better to read from Excel file
+#  algae <- read.table("processed_data/cleaned_algae_20150619.csv",  # for reading csv
 #                      as.is=TRUE, header = TRUE, sep=" ")
-  algae <- read_excel("processed_data/cleaned_algae_20150619.xlsx")
+
+# Use readxl package to read .xlsx file.  Column types based on inspection of first 100
+# rows, which is problematic for qual_replicate field.  Must specify column types with
+# col_types argument.
+  algae <- read_excel("processed_data/cleaned_algae_20150619.xlsx",  # read .xlsx
+                      col_types = c("text", "text", "text", "numeric", "numeric",  # define column types
+                                    "text", "numeric", "numeric", "text", "numeric",
+                                    "numeric", "text"))
   head(algae)
   str(algae)
 
 # Review number of samples, lakes, dates, etc
   table(algae$date)  # Formatted correctly.
   table(algae$lake)  # Unusual lake names from District 3
-  unique(algae$station)  # Still need to consult with Jade on a few of these
-  unique(algae$depth_ft) # 400, 120, 600, 200 all from RRR (Rough River Lake) 
+  unique(algae$station)  # Includes a few non-routine sites
+  unique(algae$depth_ft) # 400, 120, 600, 200 all from RRR (Rough River Lake).  Need to chase down.
 
 # Add date
   algae$rdate <- as.Date(as.character(algae$date), format = "%Y%m%d")
   algae$year <- as.numeric(substr(algae$date, 1,4))
 
-# Add district
+# Add district and filter out non-district 2 sites
   district2 <- read.xls("originalData/algae/FY13WQSampleCollectionSiteLocations.xlsx", 
                     as.is=TRUE)  # Read in established sites
   district2$id <- district2$Buckhorn  # Format
@@ -51,6 +59,7 @@
   algae[!is.na(algae$cell_per_l) & is.na(algae$BV.um3.L), c("hab")]  # Should all be TRUE. 1331 instances
   sum(algae$hab == TRUE)  # 12237.  This seems like too many.
   filter(algae, hab == TRUE) %>% select(sheet_id) %>% distinct(sheet_id)  # 148 sheets.  Many not hab sheets.
+  # See Issue #26 and #14
 
 # Analysis of anamolous site names
   algae$lake.station <- paste(algae$lake, algae$station, sep="")  # Create new id
@@ -61,8 +70,12 @@
   sheetID <- read.csv("processed_data/summaryStatus_20140716.csv", as.is = TRUE) 
   anamolous <- merge(anamolous, sheetID[, c("sheet_id", "file")])
   anamolous.algae <- anamolous[order(anamolous$lake.station),]  # Order
-  write.table(anamolous.algae, file="output/anamolousNamesAlgae.txt", row.name=FALSE)  # These are mostly fine.
-
+  write.table(anamolous.algae, file="output/anamolousNamesAlgae.txt", row.name=FALSE)  
+  # Checked with Jade and these asre sites that were only occasionaly sampled and are
+  # not included in the set of 'standard' site names found in 
+  # "originalData/algae/FY13WQSampleCollectionSiteLocations.xlsx".
+  
+  
 # Weird values in cell_per_l
 # NA first
   summary(algae$cell_per_l)  # 21 NA?
@@ -70,8 +83,8 @@
     summarize(total=sum(!is.na(BV.um3.L)))  #21 records have BV, but no cell.L
   filter(algae, is.na(cell_per_l)) %>% select(sheet_id) # all from sheet 1379. ok.  See github issue #44
 # <0 or 9999
-  filter(algae, cell_per_l < 0) %>% select(lake)  # none
-  filter(algae, cell_per_l == 9999) %>% select(lake, rdate, ID, sheet_id, cell_per_l, taxa)  #only one.  EFR 2005-05-11
+  filter(algae, cell_per_l < 0) %>% select(lake)  # none, which is good
+  filter(algae, cell_per_l == 9999) %>% select(lake, rdate, ID, sheet_id, cell_per_l, taxa)  #only one.  This is correct.  EFR 2005-05-11
 # =0
   filter(algae, cell_per_l == 0) %>% 
     select(lake, cell_per_l, BV.um3.L, sheet_id)  # These all have a BV of 0 or -9999.  remove
@@ -79,8 +92,8 @@
 
 # Weird values in BV.um3.L
 # NA first
-  summary(algae$BV.um3.L)  #1331 NA
-  filter(algae, is.na(BV.um3.L)) %>% select(BV.um3.L, cell_per_l, hab)  # revisit after issue 14 is fixed
+  summary(algae$BV.um3.L)  #1331 NA.  All HAB observations, see above.
+  filter(algae, is.na(BV.um3.L)) %>% select(BV.um3.L, cell_per_l, hab)  # All HAB observations, see above
 # <0 or 9999
   filter(algae, BV.um3.L < 0) %>% select(lake, BV.um3.L, cell_per_l)  # 87 with -9999, but all have cell_per_l
   filter(algae, BV.um3.L == 9999) %>% select(lake, rdate, ID, sheet_id, cell_per_l, taxa)  # none with 9999
@@ -91,11 +104,11 @@
 # Strip leading and trailing spaces in taxa  
   algae$taxa <- gsub("^\\s+|\\s+$", "", algae$taxa)
   unique(algae$taxa)[order(unique(algae$taxa))][1:700] # Good
-  unique(algae$class)  # Good
-  unique(algae$hab)  # Good
-  unique(algae$qual_replicate)  # Looks good, NA, Q, or R
+  unique(algae$class)  # Good, not yet assigned
+  unique(algae$hab)  # Good, either 0 or 1, equivalent to FALSE or TRUE, respectively.
+  unique(algae$qual_replicate)  # Looks good, NA, Q, or R. See GitHub wiki
   # All observations should include a taxa name
-  length(algae[is.na(algae$taxa), c("taxa", "ID", "sheet_id", "cell_per_l", "BV.um3.L")][,1])  # good
+  sum(is.na(algae$taxa))  # 0, which is good
 
 # SUMMARY TABLES FOR PRESENTATIONS------------------
   date.yr.lk <- aggregate(algae$rdate, by=list(lake=algae$lake, year=algae$year), FUN=function(X1) {length(unique(X1))})
@@ -123,22 +136,22 @@
       geom_histogram(binwidth = 0.5) +
       xlab("Number of sampling sites per lake per sampling date")
   # Which observations are hab = TRUE
-    unique(algae[algae$hab == TRUE, c("lake", "date")])
+    unique(algae[algae$hab == TRUE, c("lake", "date")])  # Revisit, see issues 26 and 14
 
 # SUMMARY STATS FOR TAXONOMY CONTRACT-------------------
 # This has changed since the taxonomist found a few problems.
   #1.  How many samples were taken over the sampling period?
-  length(unique(algae$ID))  #8200 (now 7470), should be number of unique samples
+  length(unique(algae$ID))  #8200 (now 7470, now 7450), should be number of unique samples
 
   #2.  How many data points are in the historic data set?
-  length(algae$ID)  # could execute against any column.  211958
+  length(algae$ID)  # could execute against any column.  211958, 211667 after above cleaning
   #How many in Missing Biovolume List?
   miss.biov <- algae[is.na(algae$BV.um3.L) & !is.na(algae$cell_per_l),  # Extract taxa per lake x date. Doesn't account for depth x station
                      c("lake", "rdate", "taxa")]
   miss.biov <- miss.biov[with(miss.biov, order(lake, rdate)), ]  # Reorder
-  length(miss.biov$lake)  # 1331 observations with cell per l, but no BV.  
+  length(miss.biov$lake)  # originally 1331, up to 1615 when bv = 0 was converted to NA  
   u.miss.biov <- unique(miss.biov)  # Pull out unique taxa per lake x date.  Doesn't account for depth x station
-  length(u.miss.biov$lake)  # 217 unique taxa x lake x date combination
+  length(u.miss.biov$lake)  # 217 unique taxa x lake x date combination, no up to 309 with 0 converted to NA
 
 # RECONCILE TAXONOMY AGAINST CONTRACTORS CORRECTED LIST----------------------------------------
 # MUST REVISIT AFTER WILL GENERATES UPDATED TAXA LIST
@@ -188,22 +201,22 @@
     select(taxa) %>% # pull out taxa
     distinct(taxa)  # pull out unique.  None, got them all.
 
-# Are all of BSA's names in the algae file?
+# Are all of BSA's names in the algae file?  Doesnt' matter, just checking.
   sum(!(unique(taxa.bsa$Original.Taxa.Name) %in% algae$taxa))  # 89 not in filtered algae file
   filter(taxa.bsa, !(taxa.bsa$Original.Taxa.Name %in% algae$taxa)) %>% # not in algae file
     select(Original.Taxa.Name) %>% # pull out taxa
     distinct(Original.Taxa.Name)  # pull out unique.  Most, but not all, have a strange character.
 
 # Merge
-  algae.bsa <- merge(algae, subset(taxa.bsa, select = -c(X)),  # #obs should = that in algae.
+  algae.bsa <- merge(algae, subset(taxa.bsa, select = -c(X)),  
                      by.x = "taxa", 
                      by.y = "Original.Taxa.Name")
-
+  length(algae$taxa) == length(algae.bsa$taxa)  # TRUE, therfore all records preserved.  Cool!
 
 # CONVERT BLUE-GREEN CELL COUNTS TO BIOVOLUME-----------------------
 # First, identify all taxa that need biovolume (should be all HAB == TRUE records)
 # Second, identify all examples where these taxa were found in routine monitoring
-# and have biovolumes
+# and have biovolumes.
 
 # Find missing biovolumes
   filter(algae.bsa, BV.um3.L == -9999 | is.na((BV.um3.L))) %>% 
@@ -273,22 +286,67 @@ for(j in 1:length(unique(bioSource$lake))) {
 }  # About 3 minutes
 
 # Need to deal with instances where Accepted.Name == "na" and cell counts, but not biovolume,
-# is reported
+# is reported.  Provide to BSA for their inspection
   MissingBiovolume.na <- filter(algae.bsa, (BV.um3.L == -9999 | is.na(BV.um3.L)) & Accepted.Name == "na") %>% 
     select(lake, rdate, taxa, Accepted.Name, Empire, Kingdom, Phylum..Division., Class, Order, Family,
            Genera.1, Species.1, BV.um3.L, cell_per_l)
   write.table(MissingBiovolume.na, file="output/forBSA/MissingBiovolume.na.txt", row.names = FALSE)
 
-# Use BSA's per cell biovolume estimates to convert cell counts to biovolume
-  bsa.bv <-  read.xls("originalData/algae/Missing Biovolume - OUTPUT.xlsx", 
+# Use BSA's per cell biovolume estimates to convert cell counts to biovolume.
+# Get data from originalData/algae/Missing Biovolume - OUTPUT.xlsx.  Sheet
+# "Missing Biovolume - OUTPUT" contains all observations where BSA provided
+# an "Accepted Name" for the taxa.  The few instances where biovolume was needed
+# for a taxa where no Accepted Name could be determined (i.e. only coarse level
+# taxonomic resolution was possible) are handled in sheet "Missing Biovolume NA -
+# "OUTPUT".  Both sheets should be read in and merged with algae.bsa.  
+  
+  bsa.bv.1 <-  read.xls("originalData/algae/Missing Biovolume - OUTPUT.xlsx", 
                       sheet = "Missing Biovolume - OUTPUT", as.is = TRUE)
-  bsa.bv$rdate <- as.Date(bsa.bv$Date, format ="%Y-%m-%d")
-  str(bsa.bv)
-# Gotta merge with algae.bsa.  Select cells that need bv estimate
-  filter(algae.bsa, 
-         lake %in% bsa.bv$Lake, rdate %in% bsa.bv$rdate, Accepted.Name %in% bsa.bv$Accepted.Name, 
-         (BV.um3.L == -9999 | is.na(BV.um3.L))) %>%
-  select(BV.um3.L, cell_per_l)
+  bsa.bv.1$rdate <- as.Date(bsa.bv$Date, format ="%Y-%m-%d")
+  duplicated(bsa.bv.1)  # lots of dups in here.  Eliminate dups, complicates merging.
+  bsa.bv.1 <- filter(bsa.bv.1, !duplicated(bsa.bv.1))  
+  str(bsa.bv.1)
+  
+  bsa.bv.2 <-  read.xls("originalData/algae/Missing Biovolume - OUTPUT.xlsx", 
+                        sheet = "Missing Biovolume NA - OUTPUT", as.is = TRUE)
+  bsa.bv.2 <- mutate(bsa.bv.2, 
+                     rdate = as.Date(bsa.bv.2$Date, format ="%Y-%m-%d")) %>%
+    rename(Mean.Biovolume.cell = Mean.BV.cell, 
+           cell_per_l = Density..cells.L.1.)
+                       
+  str(bsa.bv.2)
+  
+# First, merge bsa.bv.1 with algae.bsa.  
+  algae.bsa.bv <- merge(algae.bsa, 
+                        select(bsa.bv.1, -Date, -NOTES),
+                        by.x = c("Accepted.Name", "lake", "rdate"),
+                        by.y = c("Accepted.Name", "Lake", "rdate"),
+                        all.x = TRUE)
+  length(algae.bsa$lake) == length(algae.bsa.bv$lake)  # TRUE, merged as expected
+
+# Next, merge with bsa.bv.2
+  algae.bsa.bv2 <- merge(algae.bsa.bv, 
+                         select(bsa.bv.2, - NOTES, -Date),
+                        by.x = c("taxa","cell_per_l", "lake", "rdate"),
+                        by.y = c("Taxa", "cell_per_l", "Lake", "rdate"),
+                        all.x = TRUE)
+  length(algae.bsa$lake) == length(algae.bsa.bv2$lake)  # TRUE, merged as expected
+
+# Merge create two Mean.Biovolume.cell columns.  Merge and clean.  
+  algae.bsa.bv2 <- mutate(algae.bsa.bv2, 
+                          Mean.Biovolume.cell.x = ifelse(is.na(Mean.Biovolume.cell.x) & # if .x is NA
+                                                           !is.na(Mean.Biovolume.cell.y), # & .y has data,
+                                                         Mean.Biovolume.cell.y, # then .y
+                                                         Mean.Biovolume.cell.x))  %>% # else .x
+    rename(Mean.Biovolume.cell = Mean.Biovolume.cell.x)  %>%
+    select(-Mean.Biovolume.cell.y)
+
+# Check to see that NA and -9999 bv now have bv.cell
+  filter(algae.bsa.bv2, (is.na(BV.um3.L) | BV.um3.L == -9999) & is.na(Mean.Biovolume.cell)) # 
+  
+  Next, calculate bv from cell_l and Mean.Biovolume.cell
+ 
+  
 
 # A FEW VERY BASIC FIGURES-----------------------------------------
   # EFR
@@ -658,21 +716,6 @@ all.chem.dt.wide <- dcast.data.table(all.chem.dt,
                                      id + district + lake + station + depth.ft + date + time + qual ~ analyte, 
                                      value.var = "result")
 
-# EVALUATE BSA PHASE-1 TAXONOMY PRODUCT---------------------
-  bsa.taxa <- read.xls("originalData/algae/BSA DRAFT EXPANDED TAXA LIST V1_03_20_2015.xls", 
-                       sheet = "BSA DRAFT EXPANDED TAXA LIST V1", 
-                       na.strings = "", as.is=TRUE)
-
-# Strip leading and trailing spaces from "Actions" column
-  bsa.taxa <- mutate(bsa.taxa, Actions = gsub("^\\s+|\\s+$", "", Actions))
-
-# Review "Actions"
-  table(bsa.taxa$Actions)  # 42 deleted entries
-
-# Review "Taxa Type"
-  table(bsa.taxa$Taxa.Type)  # 43 observations of Taxa.Type == na
-  filter(bsa.taxa, Taxa.Type == "na") %>%
-  select(Actions, Accepted.Name)  # all but one are Action = "invalid deleted"
   
 
 
