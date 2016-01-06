@@ -691,7 +691,7 @@ for(j in 1:length(unique(bioSource$lake))) {
   
 # Write out final water chem data set.
   write.table(all.chem, # write out text file
-              ile = "processed_data/complete.final.all.chem.01.06.2016.txt",
+              file = "processed_data/complete.final.all.chem.01.06.2016.txt",
               row.names = FALSE)
   save(all.chem, # save as R object
        file = "processed_data/complete.final.all.chem.01.06.2016.Rdata")
