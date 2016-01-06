@@ -312,7 +312,9 @@ for(j in 1:length(unique(bioSource$lake))) {
   bsa.bv.2 <- mutate(bsa.bv.2, 
                      rdate = as.Date(bsa.bv.2$Date, format ="%Y-%m-%d")) %>%
     rename(Mean.Biovolume.cell = Mean.BV.cell, 
-           cell_per_l = Density..cells.L.1.)
+           cell_per_l = Density..cells.L.1.) %>%
+    select(- NOTES, -Date, -cell_per_l)
+  bsa.bv.2 <- bsa.bv.2[!duplicated(bsa.bv.2), ] # remove duplicates.  Needed for clean merge.
                        
   str(bsa.bv.2)
   
@@ -326,9 +328,9 @@ for(j in 1:length(unique(bioSource$lake))) {
 
 # Next, merge with bsa.bv.2
   algae.bsa.bv2 <- merge(algae.bsa.bv, 
-                         select(bsa.bv.2, - NOTES, -Date),
-                        by.x = c("taxa","cell_per_l", "lake", "rdate"),
-                        by.y = c("Taxa", "cell_per_l", "Lake", "rdate"),
+                         bsa.bv.2, 
+                        by.x = c("taxa", "rdate", "lake"),
+                        by.y = c("Taxa", "rdate", "Lake"),
                         all.x = TRUE)
   length(algae.bsa$lake) == length(algae.bsa.bv2$lake)  # TRUE, merged as expected
 
@@ -341,14 +343,30 @@ for(j in 1:length(unique(bioSource$lake))) {
     rename(Mean.Biovolume.cell = Mean.Biovolume.cell.x)  %>%
     select(-Mean.Biovolume.cell.y)
 
-# Check to see that NA and -9999 bv now have bv.cell
-  filter(algae.bsa.bv2, (is.na(BV.um3.L) | BV.um3.L == -9999) & is.na(Mean.Biovolume.cell)) # 
+# Check to see that NA and -9999 BV now have bv.cell
+  filter(algae.bsa.bv2, (is.na(BV.um3.L) | BV.um3.L == -9999) & is.na(Mean.Biovolume.cell)) # Excellent!
   
-  Next, calculate bv from cell_l and Mean.Biovolume.cell
- 
-  
+# Next, calculate bv from cell_l and Mean.Biovolume.cell
+ algae.bsa.bv2 <- mutate(algae.bsa.bv2, 
+                         BV.um3.L = ifelse(is.na(BV.um3.L) | BV.um3.L == -9999,
+                                           Mean.Biovolume.cell * cell_per_l,
+                                           BV.um3.L))
 
+# Check to see if we got them all. 
+ filter(algae.bsa.bv2, (is.na(BV.um3.L) | BV.um3.L == -9999)) # All observations how have biovolume!
+
+# Clean and write out complete and reconciled algae data file.
+ complete.final.algae <- select(algae.bsa.bv2, -class, Genera.1, -Species.1, -forma.1, -variety.1)
+ write.table(complete.final.algae, # write out text file
+             file = "processed_data/complete.final.algae.01.06.2016.txt",
+             row.names = FALSE)
+ save(complete.final.algae,  # Save as R object
+      file = "processed_data/complete.final.algae.01.06.2016.Rdata")
+ 
+ 
+ 
 # A FEW VERY BASIC FIGURES-----------------------------------------
+# EVERYTHING FROM HERE DOWN NEEDS TO BE UPDATED WITH NEW OBJECT NAME (complete.final.algae, FOR NOW)
   # EFR
     ggplot(algae[algae$lake == 'EFR',], aes(rdate, cell_per_l)) + 
       geom_point(aes(color=hab))
@@ -670,7 +688,13 @@ for(j in 1:length(unique(bioSource$lake))) {
 # A bit of formatting
   all.chem$rdate <- as.Date(all.chem$date)
   all.chem$year <- format(all.chem$rdate, "%Y")
-
+  
+# Write out final water chem data set.
+  write.table(all.chem, # write out text file
+              ile = "processed_data/complete.final.all.chem.01.06.2016.txt",
+              row.names = FALSE)
+  save(all.chem, # save as R object
+       file = "processed_data/complete.final.all.chem.01.06.2016.Rdata")
 
 # Duration & completeness of data set
   date.yr.lk.all.chem <- aggregate(all.chem$rdate, by=list(lake=all.chem$lake, year=all.chem$year), FUN=function(X1) {length(unique(X1))})
