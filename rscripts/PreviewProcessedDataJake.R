@@ -154,7 +154,6 @@
   length(u.miss.biov$lake)  # 217 unique taxa x lake x date combination, no up to 309 with 0 converted to NA
 
 # RECONCILE TAXONOMY AGAINST CONTRACTORS CORRECTED LIST----------------------------------------
-# MUST REVISIT AFTER WILL GENERATES UPDATED TAXA LIST
   taxa.bsa <- read.xls("originalData/algae/BSA DRAFT EXPANDED TAXA LIST V3_06_18_2015.xls", 
                        sheet = "BSA DRAFT EXPANDED TAXA LIST V3", as.is = TRUE)
   length(taxa.bsa$Original.Taxa.Name)  #1834 taxa
