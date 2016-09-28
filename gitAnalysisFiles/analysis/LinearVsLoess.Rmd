@@ -1,0 +1,210 @@
+---
+title: "Linear vs Non-parametric Smoother investigation"
+author: " "
+date: "updated August 29, 2016"
+output: 
+   html_document:
+   toc: TRUE
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE,
+                      fig.width=6, fig.height=4)
+
+library(ggplot2)
+library(dplyr)
+library(lubridate)
+#Add your working directory
+```
+
+For each reservoir, we compare the linear component of the trend over time to a loess smoother (which would be similar to other non-parametric smoothers).  
+
+This is only for the cyanobacteria, depth of 0-3 ft, and June 1 - Sept 1 (actually try through different end dates).
+
+```{r}
+load("BGtotals_data.Rdata")
+BGtotals_sh_sum <- filter(BGtotals_data, depth_cat=="0-3 ft", month(date1) %in% c(6,7,8,9))
+```
+
+# Total cell density - June-September
+
+Total cell density for Station 20001 from each lake using only observations from June 1 - September 30.The trends are very similar if use only July-September (July 1 - Sept 30).
+
+```{r echo=FALSE, warnings=FALSE}
+#lake_list <- "EFR"
+lake_list <- unique(BGtotals_data$lake)
+for (l in lake_list) {
+  plot.dat <- filter(BGtotals_sh_sum, lake==l, station=="20001")
+  d <- ggplot(plot.dat, aes(x=date1, y=log(tot_cells_Ravg))) + 
+        geom_point(aes(colour=month.f), size=1.7) +
+        geom_line(colour="red") +
+        geom_smooth(method="loess", span=1.5, col="blue")+
+        geom_smooth(method="lm", col="green") +
+        ggtitle(paste(l, "Blue-Green Algae - June-Sept")) +
+        scale_x_date(date_minor_breaks = "1 year") +
+        ylab("log(Total cells/L)")
+  
+  # plot.dat2 <- filter(plot.dat, month(date1) %in% c(7,8,9))
+  # e <- ggplot(plot.dat2, aes(x=date1, y=log(tot_cells_Ravg))) + 
+  #       geom_point(aes(colour=month.f), size=1.7) +
+  #       geom_line(colour="red") +
+  #       geom_smooth(method="loess", span=1.5, col="blue")+
+  #       geom_smooth(method="lm", col="green") +
+  #       ggtitle(paste(l, "Blue-Green Algae - July-Sept")) +
+  #       scale_x_date(date_minor_breaks = "1 year") +
+  #       ylab("log(Total cells/L)")
+  
+  print(d)
+  #print(e)
+}
+```
+
+
+# Total biovolume - June-September
+
+Total biovolume for Station 20001 from each lake using only observations from June 1 - September 30.
+
+```{r echo=FALSE, warnings=FALSE}
+#lake_list <- "EFR"
+lake_list <- unique(BGtotals_data$lake)
+for (l in lake_list) {
+  plot.dat <- filter(BGtotals_sh_sum, lake==l, station=="20001")
+  d <- ggplot(plot.dat, aes(x=date1, y=log(tot_bv_Ravg))) + 
+        geom_point(aes(colour=month.f), size=1.7) +
+        geom_line(colour="red") +
+        geom_smooth(method="loess", span=1.5, col="blue")+
+        geom_smooth(method="lm", col="green") +
+        ggtitle(paste(l, "Blue-Green Algae - June-Sept")) +
+        scale_x_date(date_minor_breaks = "1 year") +
+        ylab("log(biovolume)")
+  
+  # plot.dat2 <- filter(plot.dat, month(date1) %in% c(7,8,9))
+  # e <- ggplot(plot.dat2, aes(x=date1, y=log(tot_bv_Ravg))) + 
+  #       geom_point(aes(colour=month.f), size=1.7) +
+  #       geom_line(colour="red") +
+  #       geom_smooth(method="loess", span=1.5, col="blue")+
+  #       geom_smooth(method="lm", col="green") +
+  #       ggtitle(paste(l, "Blue-Green Algae - July-Sept")) +
+  #       scale_x_date(date_minor_breaks = "1 year") +
+  #       ylab("log(biovolume)")
+  
+  print(d)
+  #print(e)
+}
+```
+
+
+
+```{r}
+load("BGdom_data.Rdata")
+BGdom_sh_sum <- filter(BGdom_data, depth_cat=="0-3 ft", month(date1) %in% c(6,7,8,9))
+```
+
+# Proportion BG for cell density (BG dominance cell density) - June-September
+
+Proportion of the total count classified as Blue-Green Algae (a.k.a. relative cell density, BG dominance) for Station 20001 from each lake using (1) only observations from June 1 - September 30, and (2) excluding June.  For the total cell density, removing June didn't change the trend much at all, but there are bigger differences for relative density, so I'm showing a pair of plots for each lake.
+
+```{r echo=FALSE, warnings=FALSE}
+#lake_list <- "EFR"
+lake_list <- unique(BGdom_data$lake)
+for (l in lake_list) {
+  plot.dat <- filter(BGdom_sh_sum, lake==l, station=="20001")
+  d <- ggplot(plot.dat, aes(x=date1, y=rel_cells_Ravg)) + 
+        geom_point(aes(colour=month.f), size=1.7) +
+        geom_line(colour="red") +
+        geom_smooth(method="loess", span=1.5, col="blue")+
+        geom_smooth(method="lm", col="green") +
+        ggtitle(paste(l, "Blue-Green Algae - June-Sept")) +
+        scale_x_date(date_minor_breaks = "1 year") +
+        ylab("BG Proportion total cells/L")
+  
+   plot.dat2 <- filter(plot.dat, month(date1) %in% c(7,8,9))
+   e <- ggplot(plot.dat2, aes(x=date1, y=rel_cells_Ravg)) + 
+         geom_point(aes(colour=month.f), size=1.7) +
+        geom_line(colour="red") +
+         geom_smooth(method="loess", span=1.5, col="blue")+
+         geom_smooth(method="lm", col="green") +
+         ggtitle(paste(l, "Blue-Green Algae - July-Sept")) +
+          scale_x_date(date_minor_breaks = "1 year") +
+         ylab("BG Proportion total biovolume")
+  
+  print(d)
+  print(e)
+}
+```
+
+
+# Proportion BG for biovolume (BG dominance biovolume) - June-September
+
+Proportion of the total biovolume classified as Blue-Green Algae (a.k.a. relative biovolume) for Station 20001 from each lake.
+
+
+## Compare including June to excluding June
+Pairs of plots for each lake are plotted (1) only observations from June 1 - September 30, and (2) excluding June.  For the total biovolume, removing June didn't change the trend much at all, but there are bigger differences for relative density, so I'm showing a pair of plots for each lake.
+
+
+```{r echo=FALSE, warnings=FALSE}
+#lake_list <- "EFR"
+lake_list <- unique(BGdom_data$lake)
+for (l in lake_list) {
+  plot.dat <- filter(BGdom_sh_sum, lake==l, station=="20001")
+  d <- ggplot(plot.dat, aes(x=date1, y=rel_bv_Ravg)) + 
+        geom_point(aes(colour=month.f), size=1.7) +
+        geom_line(colour="red") +
+        geom_smooth(method="loess", span=1.5, col="blue")+
+        geom_smooth(method="lm", col="green") +
+        ggtitle(paste(l, "Blue-Green Algae - June-Sept")) +
+        scale_x_date(date_minor_breaks = "1 year") +
+        ylab("BG proportion total biovolume") +
+        ylim(0,1)
+  
+   plot.dat2 <- filter(plot.dat, month(date1) %in% c(7,8,9))
+   e <- ggplot(plot.dat2, aes(x=date1, y=rel_bv_Ravg)) + 
+         geom_point(aes(colour=month.f), size=1.7) +
+        geom_line(colour="red") +
+         geom_smooth(method="loess", span=1.5, col="blue")+
+         geom_smooth(method="lm", col="green") +
+         ggtitle(paste(l, "Blue-Green Algae - July-Sept")) +
+          scale_x_date(date_minor_breaks = "1 year") +
+         ylab("BG proportion total biovolume") + 
+         ylim(0,1)
+  
+  print(d)
+  print(e)
+}
+```
+
+
+## Compare proportions to logit transformation
+
+```{r logit_rel_bv}
+logit_fun <- function(x) log(x/(1-x))
+#lake_list <- "EFR"
+lake_list <- unique(BGdom_data$lake)
+
+for (l in lake_list) {
+  plot.dat <- filter(BGdom_sh_sum, lake==l, station=="20001")
+  d <- ggplot(plot.dat, aes(x=date1, y=rel_bv_Ravg)) + 
+        geom_point(aes(colour=month.f), size=1.7) +
+        geom_line(colour="red") +
+        geom_smooth(method="loess", span=1.5, col="blue")+
+        geom_smooth(method="lm", col="green") +
+        ggtitle(paste(l, "Blue-Green Algae - June-Sept")) +
+        scale_x_date(date_minor_breaks = "1 year") +
+        ylab("BG proportion total biovolume")+
+        ylim(0,1)
+  
+   f <- ggplot(plot.dat, aes(x=date1, y=logit_fun(rel_bv_Ravg))) + 
+         geom_point(aes(colour=month.f), size=1.7) +
+        geom_line(colour="red") +
+         geom_smooth(method="loess", span=1.5, col="blue")+
+         geom_smooth(method="lm", col="green") +
+         ggtitle(paste(l, "Logit - Blue-Green Algae - June-Sept")) +
+          scale_x_date(date_minor_breaks = "1 year") +
+         ylab("logit(BG proportion total biovolume)")
+  
+  print(d)
+  print(f)
+}
+```
+

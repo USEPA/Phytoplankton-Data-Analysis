@@ -1,0 +1,390 @@
+---
+title: "Analysis For Multiple Lakes"
+author: " "
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, fig.width=8, fig.height=4.5)
+options(show.signif.stars=FALSE)
+
+library(ggplot2)
+library(dplyr)
+library(lubridate)
+
+options(show.signif.stars=FALSE)
+#ADD working directory here 
+```
+
+#Possible methods for combining lakes
+
+This document goes through the analysis for assessing trend over time for multiple lakes.  We consider several methods/models:
+
+1. Ordinary least squares on log scale:  Common slope model and separate lines model.  This uses all residuals to estimate a common variance.  Therefore, it assumes all have approximately equal variability around the regression line, providing more degrees of freedom to estimate the residual variance and this information is used for confidence intervals and confidence bands.
+
+2. Weighted least squares on log scale: Same as OLS, but weighted by number of sampling occasions within each year (going into the max).  Should look into other weights (just using the sample size right now, which makes sense for averages, but need to think more about max).
+
+3. Varying intercepts and slopes models (via random effects):  Paramters specified as "random" are assumed to come from a common distribution (of either intercepts, slopes, or differences from the average slope).  Therefore, information is shared about the intercepts and slopes among lakes, meaning the estimated slopes will be pulled toward the overall slope (termed shrinkage toward the overall slope) and this happens to a greater degree where there is less information for individual lakes.   This assumes that it is reasonable to model all lakes as coming from a common distribution.  It may be more appropriate to model lakes with similar characteristics as coming from the same distribution, so there are several groups and lakes only share information within groups.  This is difficult for the single lake in more industrial area, and the method will not work well for less than 5 lakes in a group because it has to estimate the variance in slopes and intercepts for the group.
+NOTE FROM MEGAN (9/27/16):  I would like to check the random effects models again, so let me know when you are looking at this and I can think through it again as well as to what might make the most sense and be most justified based on goals of the analysis.  However, I definitely do *not* think you should use random effects models or gams just for the sake of using more complicated models if they are not needed to address the questions you have and convey the results to a broad audience.
+
+# Data used for this example
+
+The methods are demonstrated using maximum summer cyanobacteria total cell density as the response variable.  They should also apply for biovolume.  Use for relative biovolume requires a little more consideration (see File ????) in terms of transforming (or not) the raw proportions, but the general modeling methods should be appropriate after deciding on a suitable transformation that can be applied across all lakes.
+
+
+Before running this, the exploratory plots for all lakes should be checked using file ????.  Should make sure estimating linear component of trend looks reasonable and use of the maximum summer as the response also looks reasonable.
+
+
+```{r loaddata, include=FALSE}
+load("BGtotals_maxsummer.Rdata")
+names(BGtotals_maxsummer)
+```
+
+
+```{r chooselakes, include=FALSE}
+#lake_list <- c("EFR", "CHL", "RRR", "BHR")
+lake_list <- unique(BGtotals_maxsummer$lake)
+```
+
+## Ordinary least squares
+
+### Common slope, different intercepts
+
+```{r OLS, include=TRUE, echo=FALSE}
+ #putting +1 there for now, but zeroes should be filled in in next data set
+lm_sep_lines <- lm(log(maxtot_cells_Rmax+1) ~ datemax_cells_Rmax + lake + lake*datemax_cells_Rmax, data=filter(BGtotals_maxsummer, lake %in% lake_list, year!=1987))
+
+#The following summary gives estimated slopes and intercepts relative to a reference lake (first in alphaget),
+# so in this case it's BHR, p-values should be used informally, but indicate evidence that the slope and/or intercept
+# differs from the reference lake, but they should be interpreted one at a time and not as a collection.
+summary(lm_sep_lines) 
+
+#Formal hypothesis test (Extra SS F-test) comparing the null model (equal slopes for all lakes) to the alternative of separate slopes for lakes
+lm_single_slope <- lm(log(maxtot_cells_Rmax+1) ~ datemax_cells_Rmax + lake, data=filter(BGtotals_maxsummer, lake %in% lake_list, year!=1987))
+
+summary(lm_single_slope) #hard to interpret slope because on scale of days
+
+anova(lm_single_slope, lm_sep_lines) #Large p-value indicates no evidence in these data that the slopes differ (relative to variability around the regression lines)
+```
+
+```{r InterpretingSlopeOLS}
+#Interpreting the slope in terms of years?
+#Here is approximation to above analysis that makes it very easy to interpret
+
+lm_single_slope2 <- lm(log(maxtot_cells_Rmax+1) ~ year + lake, data=filter(BGtotals_maxsummer, lake %in% lake_list, year!=1987))
+summary(lm_single_slope2) #estimated slope=0.21998  
+exp(coef(lm_single_slope2)[2])
+exp(confint(lm_single_slope2)[2,]) #1.209981 1.283186
+```
+
+Traditional summary of the overall slope:  There is convincing evidence of a positive trend in the linear component of the relationship between sampling date and mean natural log transformed summer maximum total cyanobacteria cell density (two-sided p-value < 0.00001).  On the original scale, it is estimated that the median maximum total cyanobacterial cell density increased by about 1.25 times each year (25% increase), with an associated 95% confidence interval from an increase by 1.21 times to 1.28 times.
+
+```{r PlotOverallSlope}
+#Assuming an overall single slope is appropriate to apply to all lakes, here is the estimate from ordinary
+# least squares
+newx <- data.frame(datemax_cells_Rmax=rep(seq(min(na.exclude(BGtotals_maxsummer$datemax_cells_Rmax)), max(na.exclude(BGtotals_maxsummer$datemax_cells_Rmax)), length=100), length(lake_list)), lake=rep(lake_list, each=100))
+lmpred_pwCIs <- data.frame(predict(lm_single_slope, newdata=newx, interval="confidence", level=0.95))
+lmpred_pwCIs_plotdat <- data.frame(datemax_cells_Rmax=newx[,1], lake=newx[,2], fit=lmpred_pwCIs[,1], lcl=lmpred_pwCIs[,2], ucl=lmpred_pwCIs[,3])
+
+ggplot() + 
+       geom_line(data=lmpred_pwCIs_plotdat, aes(y=fit, x=datemax_cells_Rmax, colour=lake), size=1)+
+        ggtitle(paste("Linear trend assuming common slope")) +
+        scale_x_date(date_minor_breaks = "1 year") +
+        ylim(5,25) +
+        ylab("ln(Total cells/L)") + xlab("Sampling date")
+
+l <- "EFR"
+ggplot() + 
+  geom_line(data=lmpred_pwCIs_plotdat, aes(y=fit, x=datemax_cells_Rmax, group=lake), col=gray(0.6), size=1) +
+  geom_line(data=filter(lmpred_pwCIs_plotdat, lake==l), aes(y=fit, x=datemax_cells_Rmax, group=lake), col="blue", size=1) +
+  geom_ribbon(mapping = aes(ymax = ucl, ymin = lcl, x=datemax_cells_Rmax), data = filter(lmpred_pwCIs_plotdat, lake=="EFR"), alpha = 0.4, fill = "blue") +
+  ggtitle(paste(l, "Linear trend assuming common slope")) +
+  scale_x_date(date_minor_breaks = "1 year") +
+  ylim(5,25) +
+  ylab("ln(Total cells/L)") + xlab("Sampling date")
+```
+
+```{r PlotOverallSlope_backtransform}
+#Assuming an overall single slope is appropriate to apply to all lakes, here is the estimate from ordinary
+# least squares
+newx <- data.frame(datemax_cells_Rmax=rep(seq(min(na.exclude(BGtotals_maxsummer$datemax_cells_Rmax)), max(na.exclude(BGtotals_maxsummer$datemax_cells_Rmax)), length=100), length(lake_list)), lake=rep(lake_list, each=100))
+lmpred_pwCIs <- data.frame(predict(lm_single_slope, newdata=newx, interval="confidence", level=0.95))
+lmpred_pwCIs_plotdat <- data.frame(datemax_cells_Rmax=newx[,1], lake=newx[,2], fit=lmpred_pwCIs[,1], lcl=lmpred_pwCIs[,2], ucl=lmpred_pwCIs[,3])
+
+ggplot() + 
+       geom_line(data=lmpred_pwCIs_plotdat, aes(y=exp(fit), x=datemax_cells_Rmax, colour=lake), size=1)+
+        ggtitle(paste("Backtrans. linear trend - common slope")) +
+        scale_x_date(date_minor_breaks = "1 year") +
+        ylab("Total cells/L") + xlab("Sampling date")
+
+l <- "EFR"
+ggplot() + 
+  geom_line(data=lmpred_pwCIs_plotdat, aes(y=exp(fit), x=datemax_cells_Rmax, group=lake), col=gray(0.6), size=1) +
+  geom_line(data=filter(lmpred_pwCIs_plotdat, lake==l), aes(y=exp(fit), x=datemax_cells_Rmax, group=lake), col="blue", size=1) +
+  geom_ribbon(mapping = aes(ymax = exp(ucl), ymin = exp(lcl), x=datemax_cells_Rmax), data = filter(lmpred_pwCIs_plotdat, lake==l), alpha = 0.4, fill = "blue") +
+  ggtitle(paste(l, "Backtrans. linear trend - common slope")) +
+  scale_x_date(date_minor_breaks = "1 year") +
+  ylab("Total cells/L") + xlab("Sampling date")
+```
+
+
+
+
+### Separate lines (different slopes and intercepts)
+
+```{r PlotDifferentSlopes}
+## Allow separate slopes for each lake
+n_per_lake <- with(BGtotals_maxsummer, apply(table(lake, year), 1, sum))
+newx <- data.frame(datemax_cells_Rmax=rep(seq(min(na.exclude(BGtotals_maxsummer$datemax_cells_Rmax)), max(na.exclude(BGtotals_maxsummer$datemax_cells_Rmax)), length=100), length(lake_list)), lake=rep(lake_list, each=100),
+                   n_per_lake=rep(n_per_lake, each=100))
+lmpred_pwCIs <- data.frame(predict(lm_sep_lines, newdata=newx, interval="confidence", level=0.95))
+lmpred_pwCIs_plotdat <- data.frame(datemax_cells_Rmax=newx[,1], lake=newx[,2], n_per_lake=newx[,3], fit=lmpred_pwCIs[,1], lcl=lmpred_pwCIs[,2], ucl=lmpred_pwCIs[,3])
+
+lm_sefit <- data.frame(predict(lm_sep_lines, newdata=newx, se.fit=TRUE))
+
+# The Scheffe multiplier is appriate for confidence bands
+lm_bands_plotdat <- mutate(lm_sefit, low_band=(fit - (sqrt(2*qf(.95,2,n_per_lake-2)))*se.fit), 
+                                     up_band=(fit + (sqrt(2*qf(.95,2,n_per_lake-2)))*se.fit),
+                                     datemax_cells_Rmax=newx[,1], lake=newx[,2])
+
+ggplot() + 
+       geom_line(data=lmpred_pwCIs_plotdat, aes(y=fit, x=datemax_cells_Rmax, colour=lake), size=1)+
+        ggtitle(paste("Linear trend separate lines")) +
+        scale_x_date(date_minor_breaks = "1 year") +
+        ylim(5,25) +
+        ylab("ln(Total cells/L)") + xlab("Sampling date")
+
+l <- "EFR"
+
+ggplot() + 
+  geom_line(data=lmpred_pwCIs_plotdat, aes(y=fit, x=datemax_cells_Rmax, group=lake), col=gray(0.6), size=1) +
+  geom_line(data=filter(lmpred_pwCIs_plotdat, lake==l), aes(y=fit, x=datemax_cells_Rmax, group=lake), col="blue", size=1) +
+  geom_ribbon(mapping = aes(ymax = ucl, ymin = lcl, x=datemax_cells_Rmax), data = filter(lmpred_pwCIs_plotdat, lake=="EFR"), alpha = 0.6, fill = "blue") +
+  geom_ribbon(mapping = aes(ymax = up_band, ymin = low_band, x=datemax_cells_Rmax), data = filter(lm_bands_plotdat, lake=="EFR"), alpha = 0.4, fill = "yellow") +
+  ggtitle(paste(l, "Linear trend -separate line")) +
+  scale_x_date(date_minor_breaks = "1 year") +
+  ylim(5,25) +
+  ylab("ln(Total cells/L)") + xlab("Sampling date")
+```
+
+
+
+## Weighted least squares
+
+Weighted least squares repeats the above OLS analysis, but weights each summer maximum by the number of sampling occasions in that year.  Think more about appropriate weights for maximums.
+
+### Common slope 
+
+```{r OLSweighted, include=FALSE}
+#REMOVE THE +1 WHEN DATA ARE FIXED
+lm_sep_lines_wtd <- lm(log(maxtot_cells_Rmax+1) ~ datemax_cells_Rmax + lake + datemax_cells_Rmax*lake, weights=num_sampdates_per_max, data=filter(BGtotals_maxsummer, lake %in% lake_list, year!=1987))
+
+#The following summary gives estimated slopes and intercepts relative to a reference lake (first in alphaget),
+# so in this case it's BHR, p-values should be used informally, but indicate evidence that the slope and/or intercept
+# differs from the reference lake, but they should be interpreted one at a time and not as a collection.
+summary(lm_sep_lines) 
+
+#Formal hypothesis test (Extra SS F-test) comparing the null model (equal slopes for all lakes) to the alternative of separate slopes for lakes
+lm_single_slope_wtd <- lm(log(maxtot_cells_Rmax+1) ~ datemax_cells_Rmax + lake, weights=num_sampdates_per_max,  data=filter(BGtotals_maxsummer, lake %in% lake_list, year!=1987))
+
+summary(lm_single_slope_wtd)
+
+anova(lm_single_slope_wtd, lm_sep_lines_wtd) #Large p-value indicates no evidence in these data that the slopes differ (relative to variability around the regression lines), small p-value indicates evidence of a difference in at least two slopes [RE-RUN AFTER UPDATING DATA]
+```
+
+
+```{r InterpretingSlopeWtd}
+#Interpreting the slope in terms of years?
+#Here is approximation to above analysis that makes it very easy to interpret
+
+lm_single_slope_wtd2 <- lm(log(maxtot_cells_Rmax+1) ~ year + lake, weights=num_sampdates_per_max, data=filter(BGtotals_maxsummer, lake %in% lake_list, year!=1987))
+summary(lm_single_slope_wtd2) #estimated slope=0.2432  exp(0.2432)=1.27 times each year
+exp(coef(lm_single_slope_wtd2)[2]) #1.289
+exp(confint(lm_single_slope_wtd2)[2,]) #1.25, 1.33
+```
+
+Traditional summary of the overall slope:  There is convincing evidence of a positive trend in the linear component of the relationship between sampling date and mean natural log transformed summer maximum total cyanobacteria cell density (two-sided p-value < 0.00001).  On the original scale, it is estimated that the median maximum total cyanobacterial cell density increased by about `r round(exp(coef(lm_single_slope_wtd2)[2]), digits=2)` times each year, with an associated 95% confidence interval from an increase by `r round(exp(confint(lm_single_slope_wtd2)[2,])[1], digits=2)` times to `r round(exp(confint(lm_single_slope_wtd2)[2,])[2], digits=2)` times.
+
+### Separate lines
+
+```{r PlotDifferentSlopesWtd}
+#Plot all the different slopes together  -- could do overall if evidence that they are similar enough
+##
+newx <- data.frame(datemax_cells_Rmax=rep(seq(min(na.exclude(BGtotals_maxsummer$datemax_cells_Rmax)), max(na.exclude(BGtotals_maxsummer$datemax_cells_Rmax)), length=100), length(lake_list)), lake=rep(lake_list, each=100))
+lmpred_pwCIs <- data.frame(predict(lm_sep_lines_wtd, newdata=newx, interval="confidence", level=0.95))
+lmpred_pwCIs_plotdat <- data.frame(datemax_cells_Rmax=newx[,1], lake=newx[,2], fit=lmpred_pwCIs[,1], lcl=lmpred_pwCIs[,2], ucl=lmpred_pwCIs[,3])
+
+ggplot() + 
+       geom_line(data=lmpred_pwCIs_plotdat, aes(y=fit, x=datemax_cells_Rmax, colour=lake), size=1)+
+        ggtitle(paste("Linear trend separate lines")) +
+        scale_x_date(date_minor_breaks = "1 year") +
+        ylim(5,25) +
+        ylab("ln(Total cells/L)") + xlab("Sampling date")
+
+l <- "EFR"
+l2 <- "CRR"
+ggplot() + 
+  geom_line(data=lmpred_pwCIs_plotdat, aes(y=fit, x=datemax_cells_Rmax, group=lake), col=gray(0.6), size=1) +
+  geom_line(data=filter(lmpred_pwCIs_plotdat, lake==l), aes(y=fit, x=datemax_cells_Rmax, group=lake), col="blue", size=1) +
+  geom_ribbon(mapping = aes(ymax = ucl, ymin = lcl, x=datemax_cells_Rmax), data = filter(lmpred_pwCIs_plotdat, lake==l), alpha = 0.4, fill = "blue") +
+  geom_line(data=filter(lmpred_pwCIs_plotdat, lake==l2), aes(y=fit, x=datemax_cells_Rmax, group=lake), col="blue", size=1) +
+  geom_ribbon(mapping = aes(ymax = ucl, ymin = lcl, x=datemax_cells_Rmax), data = filter(lmpred_pwCIs_plotdat, lake==l2), alpha = 0.4, fill = "blue") +
+  ggtitle(paste(l,l2, "Linear trend - wtd OLS")) +
+  scale_x_date(date_minor_breaks = "1 year") +
+  ylim(5,25) +
+  ylab("ln(Total cells/L)") + xlab("Sampling date")
+```
+
+```{r PlotDifferetSlope_backtransform}
+#Assuming an overall single slope is appropriate to apply to all lakes, here is the estimate from ordinary
+# least squares
+ggplot() + 
+       geom_line(data=lmpred_pwCIs_plotdat, aes(y=exp(fit), x=datemax_cells_Rmax, colour=lake), size=1)+
+        ggtitle(paste("Backtrans. separate slopes")) +
+        scale_x_date(date_minor_breaks = "1 year") +
+        ylab("Total cells/L") + xlab("Sampling date")
+
+l <- "EFR"
+ggplot() + 
+  geom_line(data=lmpred_pwCIs_plotdat, aes(y=exp(fit), x=datemax_cells_Rmax, group=lake), col=gray(0.6), size=1) +
+  geom_line(data=filter(lmpred_pwCIs_plotdat, lake==l), aes(y=exp(fit), x=datemax_cells_Rmax, group=lake), col="blue", size=1) +
+  geom_ribbon(mapping = aes(ymax = exp(ucl), ymin = exp(lcl), x=datemax_cells_Rmax), data = filter(lmpred_pwCIs_plotdat, lake=="EFR"), alpha = 0.4, fill = "blue") +
+  ggtitle(paste(l, "Backtrans. separate slopes")) +
+  scale_x_date(date_minor_breaks = "1 year") +
+  ylab("Total cells/L") + xlab("Sampling date")
+```
+
+
+## Varying slopes and intercepts in random effects/hierarchical model
+
+Gelman and Hill (2006) is a solid, and accessible, reference for this, and it's not too expensive.
+
+We fit the varying slopes model and then the varying intercepts and slopes model, assuming all lakes come a common population (so that it makes sense to talk about the overall mean and slope).
+
+### Common slope, varying intercepts
+
+```{r ExampleVaryingIntercepts}
+library(lme4)
+library(arm) #this goes with the Gelman and Hill book to make looking at the output easier
+
+#Just using year here to make it easier to fit, could even make year integers 1-28 (see below)
+BGtotals_maxsummer <- mutate(BGtotals_maxsummer, year_int=year-1987)
+BGdata <- filter(BGtotals_maxsummer, lake %in% lake_list, year!=1987)
+lmer_varyint <- lmer(log(maxtot_cells_Rmax+1) ~ year_int + (1|lake),  data=BGdata)
+
+summary(lmer_varyint)
+display(lmer_varyint)
+coef(lmer_varyint) #notice common slope and varying intercepts
+fixef(lmer_varyint) #very similar to lm() result for common slope
+ranef(lmer_varyint)
+se.ranef(lmer_varyint)
+```
+
+```{r plotVaryingIntercepts}
+newx <- data.frame(year_int=rep(seq(min(BGtotals_maxsummer$year_int), max(BGtotals_maxsummer$year_int),length=30), length(lake_list)), lake=rep(lake_list, each=30))
+lmer_fits <- data.frame(predict(lmer_varyint, newdata=newx))
+
+lmer_plotdat <- data.frame(year_int=newx[,1], lake=newx[,2], fit=lmer_fits[,1])
+
+ggplot() + 
+       geom_line(data=lmer_plotdat, aes(y=fit, x=year_int, colour=lake), size=1)+
+        ggtitle(paste("Varying intercepts model")) +
+        ylim(5,25) +
+        ylab("ln(Total cells/L)") + xlab("Sampling date")
+
+l <- "EFR"
+ggplot() + 
+  geom_line(data=lmer_plotdat, aes(y=fit, x=year_int, group=lake), col=gray(0.6), size=1) +
+  geom_line(data=filter(lmer_plotdat, lake==l), aes(y=fit, x=year_int, group=lake), col="blue", size=1) +
+  geom_abline(aes(intercept=fixef(lmer_varyint)[1], slope=fixef(lmer_varyint)[2]), col="tomato", lwd=2)+
+  ggtitle(paste("Varying intercepts model")) +
+        ylim(5,25) +
+        ylab("ln(Total cells/L)") + xlab("Sampling date")
+#  geom_ribbon(mapping = aes(ymax = exp(ucl), ymin = exp(lcl), x=), data = filter(lmer_plotdat, lake=="EFR"), alpha = 0.4, fill = "blue") +
+ 
+```
+
+
+### Varying slopes, varying intercepts
+
+In this case, we fit a fixed effect for time, so there is an overall slope and the random effects are deviations from that overall slope.
+
+```{r FittingVaryingSlopesAndIntercepts}
+lmer_vary <- lmer(log(maxtot_cells_Rmax+1) ~ year_int + (year_int|lake),  data=filter(BGtotals_maxsummer, lake %in% lake_list, year!=1987))
+
+summary(lmer_vary)
+display(lmer_vary)
+coef(lmer_vary) #notice different slopes and intercepts
+fixef(lmer_vary) #Just intercept
+ranef(lmer_vary) #interepts and slopes
+se.ranef(lmer_vary)
+```
+
+
+```{r plotVaryingInterceptsAndSlopes}
+newx <- data.frame(year_int=rep(seq(min(BGtotals_maxsummer$year_int), max(BGtotals_maxsummer$year_int),length=30), length(lake_list)), lake=rep(lake_list, each=30))
+lmer_fits <- data.frame(predict(lmer_vary, newdata=newx))
+
+lmer_plotdat <- data.frame(year_int=newx[,1], lake=newx[,2], fit=lmer_fits[,1])
+
+ggplot() + 
+       geom_line(data=lmer_plotdat, aes(y=fit, x=year_int, colour=lake), size=1)+
+        ggtitle(paste("Varying slopes diffs and intercepts model")) +
+        ylim(5,25) +
+        ylab("ln(Total cells/L)") + xlab("Sampling date")
+
+l <- "EFR"
+ggplot() + 
+  geom_line(data=lmer_plotdat, aes(y=fit, x=year_int, group=lake), col=gray(0.6), size=1) +
+  geom_line(data=filter(lmer_plotdat, lake==l), aes(y=fit, x=year_int, group=lake), col="blue", size=1) +
+   geom_abline(aes(intercept=fixef(lmer_vary)[1], slope=fixef(lmer_vary)[2]), col="tomato", lwd=2)+
+  ggtitle(paste("Varying slope diffs and intercepts model")) +
+        ylim(5,25) +
+        ylab("ln(Total cells/L)") + xlab("Sampling date")
+#  geom_ribbon(mapping = aes(ymax = exp(ucl), ymin = exp(lcl), x=), data = filter(lmer_plotdat, lake=="EFR"), alpha = 0.4, fill = "blue") +
+```
+
+Now, we fit varying slopes and intercepts, where there is no fixed effect for slope.
+
+```{r FittingVaryingSlopesAndIntercepts2}
+lmer_vary2 <- lmer(log(maxtot_cells_Rmax+1) ~ (year_int|lake),  data=filter(BGtotals_maxsummer, lake %in% lake_list, year!=1987))
+
+summary(lmer_vary2)
+display(lmer_vary2)
+coef(lmer_vary2) #notice different slopes and intercepts
+fixef(lmer_vary2) #Just intercept
+ranef(lmer_vary2) #interepts and slopes
+mean(ranef(lmer_vary2)$lake[,2]) #0.2213
+mean(ranef(lmer_vary2)$lake[,1]) #-4.84
+se.ranef(lmer_vary2)
+
+```
+
+```{r plotVaryingInterceptsAndSlopes2}
+newx <- data.frame(year_int=rep(seq(min(BGtotals_maxsummer$year_int), max(BGtotals_maxsummer$year_int),length=30), length(lake_list)), lake=rep(lake_list, each=30))
+lmer_fits <- data.frame(predict(lmer_vary2, newdata=newx))
+
+lmer_plotdat <- data.frame(year_int=newx[,1], lake=newx[,2], fit=lmer_fits[,1])
+
+ggplot() + 
+       geom_line(data=lmer_plotdat, aes(y=fit, x=year_int, colour=lake), size=1)+
+        ggtitle(paste("Varying slopes and intercepts model")) +
+        ylim(5,25) +
+        ylab("ln(Total cells/L)") + xlab("Sampling date")
+
+l <- "EFR"
+ggplot() + 
+  geom_line(data=lmer_plotdat, aes(y=fit, x=year_int, group=lake), col=gray(0.6), size=1) +
+  geom_line(data=filter(lmer_plotdat, lake==l), aes(y=fit, x=year_int, group=lake), col="blue", size=1) +
+   geom_abline(aes(intercept=(fixef(lmer_vary2)+mean(ranef(lmer_vary2)$lake[,1])), slope=mean(ranef(lmer_vary2)$lake[,2])), col="tomato", lwd=2)+
+  ggtitle(paste("Varying slopes and intercepts model")) +
+        ylim(5,25) +
+        ylab("ln(Total cells/L)") + xlab("Sampling date")
+#  geom_ribbon(mapping = aes(ymax = exp(ucl), ymin = exp(lcl), x=), data = filter(lmer_plotdat, lake=="EFR"), alpha = 0.4, fill = "blue") +
+```
+
+To do:
+-Could also look at lme() results as well
+
+

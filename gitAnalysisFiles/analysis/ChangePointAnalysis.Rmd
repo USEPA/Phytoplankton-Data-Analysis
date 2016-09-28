@@ -1,0 +1,74 @@
+---
+title: "Change Point Analysis"
+author: "Megan Higgs"
+date: "September 13, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(bcp)
+library(strucchange)
+library(segmented)
+
+#ADD path to working directory here
+```
+
+Here is some code for getting started with change point analysis.  This is just meant to get you started and is not a complete analysis.  I'm sure there are other references/methods/packages out there now as well.
+
+```{r loaddata, include=FALSE}
+load("BGtotals_maxsummer.Rdata")
+names(BGtotals_maxsummer)
+
+load("BGtotals_data.Rdata")
+names(BGtotals_data)
+
+#make a year column that is an integer
+BGtotals_maxsummer <- mutate(BGtotals_maxsummer, year_int=year-1987)
+
+#subset to lakes if you would like
+lake_list <- c("EFR", "CHL", "RRR")
+BGdata <- filter(BGtotals_maxsummer, lake %in% lake_list, year!=1987)
+```
+
+```{r breakpoint}
+#Breakpoints function
+ help(breakpoints) #See example code at end of help file
+
+  break1.out <- breakpoints(log(maxtot_cells_Rmax+1) ~ datemax_cells_Rmax, h=0.15, breaks=1, het.reg=TRUE, het.err=TRUE, data=filter(BGdata, lake=="EFR"))
+  summary(break1.out)
+  plot(break1.out)
+  
+  filter(BGdata, lake=="EFR")$datemax_cells_Rmax[13] ##2007-06-20
+  
+#See help file code example for plotting the fitted lines?  
+  
+```  
+  
+
+```{r segmented} 
+  ###### Fit a broken-line model using the segmented() package in R - constrains the lines to meet
+   ####  at the changepoint
+
+#NEED TO CHANGE 
+    lin.out <- lm(log(maxtot_cells_Rmax+1) ~ year_int, data=filter(BGdata, lake=="EFR")) 
+     seg.lin.out <- segmented(lin.out, seg.Z=~year_int, psi=13, control=seg.control(it.max=100))
+     summary(seg.lin.out)
+     slope.lin <- slope(seg.lin.out)
+     slope.lin$year_int[,-(2:3)]
+     exp(slope.lin$year_int[,-(2:3)]) 
+     davies.test(lin.out, "year_int", k=5)  ###not working -- fix code
+    
+  
+   #dev.new()
+     #ISSUES WITH THE X-AXIS ON THIS PLOT relative to the use of time series object: ts()
+   plot(BGdata$year_int[BGdata$lake=="EFR"], log(BGdata$maxtot_cells_Rmax[BGdata$lake=="EFR"]), type="b", pch=18, cex=1, main="",xlab="Year", xaxt="n") 
+      #axis(1,at=seq(1,29,by=2), labels=as.character(1983:2011)[seq(1,29,by=2)])
+      lines(ts(fitted(lin.out), start=1), col=2, lwd=2)
+      lines(ts(fitted(seg.lin.out), start=1), col="purple", lwd=3)
+```
+
+NOTES:
+-You can fit changepoint models that restrict the two segments to meet at the change point, or that allow a jump (completely separate line)
+-Try not to put too much emphasis on selection of change point --- this is more useful as a describing differences around a suspected changepoint
+

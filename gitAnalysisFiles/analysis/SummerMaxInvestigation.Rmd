@@ -77,10 +77,6 @@ for (l in lake_list) {
 
 
 
-
-
-We need more investigation of when sampling is occurring and how much sampling is occuring with the maximum values we are reporting.   We will add investigations with temperature as soon as we get that data too.
-
 ```{r, eval=FALSE, include=FALSE}
 ## Need to grab unique sampling dates for each year
 BGtotals_data <- mutate(BGtotals_data, year=year(date1))
@@ -100,17 +96,6 @@ for (l in lake_list) {
 }
 ```
 
-```{r, eval=FALSE, include=FALSE}
-plot(samp_dates, year) #just to look at relationship with dates over years, but really can do that easily with ggplot below -- maybe don't need all of above stuff
-
-
-DatesPerYear_data <- data.frame()
-
-#check
-#with(filter(BGtotals_data, lake=="EFR", year=="1992", depth_cat=="0-3 ft"), unique(yday(date1)))
-
-## Only for summer data (summer max)
-```
 
 ```{r, eval=FALSE, include=FALSE}
 BGtotals_data <- mutate(BGtotals_data, year=year(date1))
@@ -128,7 +113,6 @@ for (l in lake_list) {
 ## Day of sampling date vs. day of the year of the sampling
 
 June 1 and September 30 are shown in orange horizontal lines.
-
 
 ```{r, eval=FALSE, include=FALSE}
 ## Generic version of day of year sampled over the years

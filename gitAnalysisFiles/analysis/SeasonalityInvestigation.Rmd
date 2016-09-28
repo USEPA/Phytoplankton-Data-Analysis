@@ -1,0 +1,179 @@
+---
+title: "More Seasonality Investigation"
+author: " "
+date: "updated September 27, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE)
+library(ggplot2)
+library(dplyr)
+library(lubridate)
+#Add path to working directory here
+```
+
+```{r, include=FALSE}
+#load("DataForAnalysis_21Aug2016.Rdata")
+load("DataForAnalysis_30Aug2016.Rdata")
+load("BGtotals_data.Rdata")
+load("BGtotals_no0s_data.Rdata")
+#BGtotals_data <- dplyr::mutate(BGtotals_data, year.f=as.factor(year(date1)), weekofyear=week(date1))
+```
+
+
+```{r DatesWithinYear, include=FALSE}
+#Need a column giving dates within a year (with no year in them)
+day_in_yr <- as.Date(with(BGtotals_data, paste("1000","-",substring(date1,6,10), sep="")))
+BGtotals_data$day_in_yr <- day_in_yr
+
+#can use yday, but doesn't make it a date to plot
+```
+
+
+In this document, we look more closely at seasonality in total cell density of cyanobacteria.  Biovolume and other responses can be added with very similar code, but still waiting for algae data file to be finished.
+
+Plot total cells/L counts per station/date coded by year.  Unique stations are not idenified in these plots (i.e. points within a year come from all the stations.)
+
+```{r, fig.height=5, fig.width=7}
+plot.dat <- filter(BGtotals_data, lake %in% c("EFR", "CHL", "RRR", "BHR"), depth_cat=="0-3 ft")
+ggplot(plot.dat, aes(x=day_in_yr, y=log(tot_cells_Ravg), group=year.f)) + 
+        geom_vline(aes(xintercept=as.numeric(as.Date("1000-06-01"))), colour="red", size=0.5) +
+        geom_vline(aes(xintercept=as.numeric(as.Date("1000-10-01"))), colour="red", size=0.5) +
+        geom_point(aes(colour=year.f)) +
+        facet_wrap(~lake, nrow=2, ncol=2) +
+        xlab("Day of year") +
+        ylab("log(BG Total density)")+
+        ggtitle("EFR - log cell density for BG Algae") +
+        scale_x_date(date_minor_breaks = "1 month")
+        
+```
+
+
+Put very smooth loess lines on for each year with more than two sampling dates for EFR (not adjusting years by stations)
+```{r, fig.height=5, fig.width=7}
+plot.dat <- filter(BGtotals_data, lake %in% c("EFR", "CHL", "RRR", "BHR"), depth_cat=="0-3 ft", !year.f %in% c("2006", "2007","2008","2009","1995", "2012", "2014", "2015"))
+ggplot(plot.dat, aes(x=day_in_yr, y=log(tot_cells_Ravg), group=year.f)) + 
+        geom_vline(aes(xintercept=as.numeric(as.Date("1000-06-01"))), colour="red", size=0.5) +
+        geom_vline(aes(xintercept=as.numeric(as.Date("1000-10-01"))), colour="red", size=0.5) +
+        geom_point(aes(colour=year.f)) +
+        geom_smooth(aes(colour=year.f), method="loess", se=FALSE, span=100) +
+        facet_wrap(~lake, nrow=2, ncol=2) +
+        xlab("Day of year") +
+        ylab("log(BG Total density)")+
+        ggtitle("EFR - log cell density for BG Algae") +
+        scale_x_date(date_minor_breaks = "1 month")
+```
+
+
+Look at different panels for each year, for each reservoir (stations are identified in these plots).
+```{r, fig.height=8, fig.width=9}
+plot.dat <- filter(BGtotals_data, lake=="EFR", depth_cat=="0-3 ft", !year.f=="1995")
+ggplot(plot.dat, aes(x=day_in_yr, y=log(tot_cells_Ravg), group=year.f)) + 
+        geom_vline(aes(xintercept=as.numeric(as.Date("1000-06-01"))), colour="red", size=0.5) +
+        geom_vline(aes(xintercept=as.numeric(as.Date("1000-10-01"))), colour="red", size=0.5) +
+        geom_point(aes(colour=station)) +
+        facet_wrap(~year.f)+
+        xlab("Day of year") +
+        ylab("log(BG Total density)")+
+        ggtitle("EFR - log cell density for BG Algae") +
+        scale_x_date(date_minor_breaks = "1 month")
+
+plot.dat <- filter(BGtotals_data, lake=="CHL", depth_cat=="0-3 ft", !year.f=="1995")
+ggplot(plot.dat, aes(x=day_in_yr, y=log(tot_cells_Ravg), group=year.f)) + 
+        geom_vline(aes(xintercept=as.numeric(as.Date("1000-06-01"))), colour="red", size=0.5) +
+        geom_vline(aes(xintercept=as.numeric(as.Date("1000-10-01"))), colour="red", size=0.5) +
+        geom_point(aes(colour=station)) +
+        facet_wrap(~year.f)+
+        xlab("Day of year") +
+        ylab("log(BG Total density)")+
+        ggtitle("CHL - log cell density for BG Algae") +
+        scale_x_date(date_minor_breaks = "1 month")
+
+
+plot.dat <- filter(BGtotals_data, lake=="RRR", depth_cat=="0-3 ft", !year.f=="1995")
+ggplot(plot.dat, aes(x=day_in_yr, y=log(tot_cells_Ravg), group=year.f)) + 
+        geom_vline(aes(xintercept=as.numeric(as.Date("1000-06-01"))), colour="red", size=0.5) +
+        geom_vline(aes(xintercept=as.numeric(as.Date("1000-10-01"))), colour="red", size=0.5) +
+        geom_point(aes(colour=station)) +
+        facet_wrap(~year.f)+
+        xlab("Day of year") +
+        ylab("log(BG Total density)")+
+        ggtitle("RRR - log cell density for BG Algae") +
+        scale_x_date(date_minor_breaks = "1 month")
+
+
+plot.dat <- filter(BGtotals_data, lake=="BHR", depth_cat=="0-3 ft", !year.f=="1995")
+ggplot(plot.dat, aes(x=day_in_yr, y=log(tot_cells_Ravg), group=year.f)) + 
+        geom_vline(aes(xintercept=as.numeric(as.Date("1000-06-01"))), colour="red", size=0.5) +
+        geom_vline(aes(xintercept=as.numeric(as.Date("1000-10-01"))), colour="red", size=0.5) +
+        geom_point(aes(colour=station)) +
+        facet_wrap(~year.f)+
+        xlab("Day of year") +
+        ylab("log(BG Total density)")+
+        ggtitle("BHR - log cell density for BG Algae") +
+        scale_x_date(date_minor_breaks = "1 month")
+```
+
+
+#Calculate the maximums per sampling occasion
+
+Calculate maximums and day of year of maximums to look at relationship between number of sampling occasions, when those sampling occasions occur, and when the maximum is.
+
+```{r, , eval=FALSE, include=FALSE}
+load("BGtotals_maxsummer.Rdata")
+```
+
+
+*THE BELOW NEEDS TO BE UPDATED BECAUSE THE DATA OF THE MAX IS NOW ALREADY IN THE BGTOTALS_MAXSUMMER DATA FILE*
+
+Look at the day of the year that the maximum count occurs over all years, for each reservoir.  Do this for cell density and biovolume.
+```{r}
+date_of_max_data <- filter(BGtotals_data, lake %in% c("EFR", "CHL", "RRR", "BHR"), depth_cat=="0-3 ft") %>% 
+                    dplyr::group_by(lake, year.f) %>%  
+                        dplyr::summarise(date_max_cells=day_in_yr[tot_cells_Ravg==max(tot_cells_Ravg)],
+                                         date_max_bv=day_in_yr[tot_bv_Ravg==max(tot_bv_Ravg)][1])
+```
+
+```{r, fig.width=5, fig.height=5}
+ggplot(date_of_max_data, aes(x=lake, y=date_max_cells)) + 
+    geom_boxplot(fill="lightblue") +
+    geom_point() +
+    ylab("Date maximum total cells/L observed (BG)")
+
+ggplot(date_of_max_data, aes(x=lake, y=date_max_bv)) + 
+    geom_boxplot(fill ="lightgreen") +
+    geom_point() +
+    ylab("Date maximum total biovolume observed (BG)")
+```
+
+
+Is the timing of the max varying over years?  Pattern could just be artifact of when sampling was done.
+```{r}
+ggplot(date_of_max_data, aes(x=as.numeric(year.f), y=date_max_bv)) + 
+    geom_point(aes(colour=lake)) +
+    ylab("Date maximum total biovolume observed (BG)") +
+    xlab("year (2=1992)")
+
+ggplot(date_of_max_data, aes(x=as.numeric(year.f), y=date_max_cells)) + 
+    geom_point(aes(colour=lake)) +
+    ylab("Date maximum total cells/L observed (BG)") +
+    xlab("year (2=1992)")
+
+
+```
+
+# Now look at more formal investigation
+
+```{r, eval=FALSE, include=FALSE}
+library(season)
+data_to_fit <- mutate(filter(BGtotals_data, lake=="EFR", depth_cat=="0-3 ft"), log_cells=log(tot_cells_Ravg))
+names(data_to_fit)
+fit_cos <- cosinor(formula=log(tot_cells_Ravg)~date1, date='date1', type='daily', data=BGtotals_data)
+Error in as.POSIXlt.Date(x) : 
+  (list) object cannot be coerced to type 'double'
+
+```
+
+
+

@@ -1,0 +1,154 @@
+---
+title: "TemperatureData"
+author: " "
+date: "updated September 27, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE)
+library(ggplot2)
+library(plyr)
+library(dplyr)
+library(reshape2)
+library(lubridate)
+library(openxlsx)
+#setwd("~/repos/EPA TO57/analysis")  #Set working directory
+```
+
+```{r loadtempdata}
+temp_data <- read.xlsx("Water_temperature_all_2016.09.07.xlsx", detectDates=TRUE)
+temp_data <-  mutate(temp_data, date1=as.Date(paste(substring(Date,1,4),"-", substring(Date,5,6),"-", substring(Date,7,8), sep="")))
+load("BGtotals_data.Rdata")
+load("BGtotals_maxsummer.Rdata")
+```
+
+
+
+
+```{r, eval=FALSE, include=FALSE}
+#need to mesh the two data sets to be able to make all the plots
+
+#or can I just grab the temperatures to go with the dates we have other samples easily
+# enough?  Would be nice to keep all the temp data so that I can actually predict what
+# the max would have been if it was at another month.
+# Relationship between temperature and probability that the month is a maximum?  Not enough to do this, but can certainly look at relationship between temperature and counts when we actually have counts 
+# Do the plots by panels for year again to see within each year.. maybe can just add the temperature data?
+
+temp_data_shallow <- filter(temp_data, Depth=="000", Value<40)
+temp_data_new <- dplyr::select(temp_data_shallow, lake=Reservoir, station=Station, year=Year,
+                               date1=date1, depth_ft=Depth, temp=Value, units=Units)
+
+BGtotals_shallow <- filter(BGtotals_data, depth_cat=="0-3 ft")
+
+BG_temp_merge <- dplyr::full_join(temp_data_new, BGtotals_shallow, by=c("date1", "lake", "station", "year"))
+dim(BG_temp_merge)
+names(BG_temp_merge)
+
+ggplot(BG_temp_merge) + geom_point(aes(x=temp,y=log(tot_cells_Rmax), colour=lake))
+```
+
+```{r, eval=FALSE, include=FALSE}
+BG_maxsummer <- dplyr::select(BGtotals_maxsummer, date1=datemax_cells_Rmax, lake=lake,
+                                maxtot_cells_Rmax)
+
+BGmax_temp_merge <- dplyr::full_join(temp_data_new, BG_maxsummer, by=c("date1", "lake"))
+dim(BGmax_temp_merge)
+names(BGmax_temp_merge)
+
+ggplot(BGmax_temp_merge) + geom_point(aes(x=temp,y=log(maxtot_cells_Rmax), colour=lake))
+```
+
+
+#Panels by year
+
+Gray lines are the temperature records for depth of "000" and blue lines are the maximum monthly temperature for that same depth.  Red vertical line identifies the timing of the max count and orange vertical lines show June 1 - Sept 30.
+
+I'm cheating by using the same scale for both the log counts and Celcius because they are close enough for now!
+
+This is only for cell density, not biovolume yet.
+
+```{r DatesWithinYear, include=FALSE}
+#Need a column giving dates within a year (with no year in them)
+#BGtotals_data <- mutate(BGtotals_data, day_in_yr=as.Date(paste("1000","-",substring(date1,6,10), sep="")))
+# for some reason the mutate version in above line does not work
+
+BGtotals_data$day_in_yr <- as.Date(with(BGtotals_data, paste("1000","-",substring(date1,6,10), sep="")))
+
+temp_data$day_in_yr <- as.Date(with(temp_data, paste("1000","-",substring(date1,6,10), sep="")))
+temp_data <- mutate(temp_data, year.f=as.factor(year(date1)), day=day(date1))
+temp_data <- filter(temp_data, Value<=40)
+temp_monthlymax <- temp_data %>% group_by(Reservoir, Depth, Year, Month) %>%    
+                           dplyr::summarise(monthlymax=max(Value), 
+                                              date_of_max=max(date1[Value==max(Value)]),
+                                              day_in_yr=max(day_in_yr[Value==max(Value)]), 
+                                              year=year(date1)[1])
+temp_monthlymax <- mutate(temp_monthlymax, year.f=as.factor(year))
+            
+
+BGtotals_maxsummer$day_in_yr <- as.Date(with(BGtotals_maxsummer, paste("1000","-",substring(datemax_cells_Rmax,6,10), sep="")))
+BGtotals_maxsummer <- mutate(BGtotals_maxsummer, year.f=as.factor(year))
+
+#can use yday, but doesn't make it a date to plot
+```
+
+#One long time series
+
+```{r, fig.width=8, fig.height=8}
+lake_list <- unique(BGtotals_data$lake)
+for (l in lake_list){
+plot.dat <- filter(BGtotals_data, lake==l, depth_cat=="0-3 ft", !year.f=="1987")
+plot.dat2 <- filter(temp_data, Reservoir==l, Depth=="000", !year.f=="1987")
+plot.dat3 <- filter(temp_monthlymax, Reservoir==l, Depth=="000", !year.f=="1987")
+plot.dat4 <- filter(BGtotals_maxsummer, lake==l, !year.f=="1987")
+d <- ggplot(plot.dat) + 
+        geom_line(data=plot.dat2, aes(x=day_in_yr, y=Value), col=gray(0.5)) +
+        geom_line(data=plot.dat3, aes(x=day_in_yr, y=monthlymax), col="blue") +
+        geom_point(data=plot.dat, aes(x=day_in_yr, y=log(tot_cells_Rmax), group=year.f, colour=station)) +
+        facet_wrap(~year.f, ncol=4) +
+        geom_vline(aes(xintercept=as.numeric(as.Date("1000-06-01"))), colour="orange", size=0.5) +
+        geom_vline(aes(xintercept=as.numeric(as.Date("1000-10-01"))), colour="orange", size=0.5) +
+        geom_vline(data=plot.dat4, aes(xintercept=as.numeric(day_in_yr)), colour="red", size=1.0) +
+        xlab("Day of year") +
+        ylab("ln(BG Total density) or Celcius")+
+        ggtitle(paste(l, "log cell density for BG Algae")) +
+        scale_x_date(date_minor_breaks = "1 month")
+print(d)
+}
+```
+
+
+```{r, fig.width=10, fig.height=4}
+lake_list <- unique(BGtotals_data$lake)
+for (l in lake_list){
+plot.dat <- filter(BGtotals_data, lake==l, depth_cat=="0-3 ft")
+plot.dat2 <- filter(temp_data, Reservoir==l, Depth %in% c('000'))
+plot.dat3 <- filter(BGtotals_maxsummer, lake==l)
+  #View(plot.dat2)
+
+#  ggplot() +   geom_point(data=plot.dat2, aes(x=date1, y=Value), col="orange", shape=16, size=1) +  geom_line(data=plot.dat2, aes(x=date1, y=Value), col=gray(0.3)) +
+#    geom_point(data=plot.dat3, aes(x=datemax_cells_Rmax, y=30), col="magenta", shape=16) 
+  
+d <-  ggplot() + 
+        geom_hline(aes(yintercept=23.03), colour="red", size=0.5)+
+        geom_hline(aes(yintercept=18.42), colour="pink", size=0.5) +
+        geom_hline(aes(yintercept=16.81), colour="orange", size=0.5) +
+        geom_point(data=plot.dat, aes(x=date1, y=log(tot_cells_Rmax)), col=1, shape=1, size=2) +
+        #geom_line(data=plot.dat, aes(x=date1, y=log(tot_cells_Rmax))) + 
+        geom_point(data=plot.dat2, aes(x=date1, y=Value), col="orange", shape=16, size=1) +   geom_line(data=plot.dat2, aes(x=date1, y=Value), col="orange") +
+        geom_point(data=plot.dat3, aes(x=datemax_cells_Rmax, y=log(maxtot_cells_Rmax)),
+                    col="magenta", shape=10) +
+        geom_line(data=plot.dat3, aes(x=datemax_cells_Rmax, y=log(maxtot_cells_Rmax)),
+                    col=gray(0.3)) + 
+        ggtitle(paste(l, "Maximum Summer Total Cells/L - cyano")) +
+        scale_x_date(date_minor_breaks = "1 year") +
+        ylim(0,35) +
+        ylab("ln(Total cells/L) or Celcius") + xlab("Sampling date")
+ print(d)
+}
+```
+
+To do:
+-Merge data so can look direclty at relationships among temperature and timing for max (accounting for times available).  However, from initial look it does not look like the temperature is changing that much over the summer months that it would be that helpful in predicting, for example, what the maximum count might be for a year/reservoir if we had samples from other/more summer months.
+
+-There are other larger questions about temperature beyond just trying to account for seasonality.  Excerpt from email from Nate: "Regarding lake temperature, might be informative to take an approach similar to the IPCC [cited in attached paper, and similarly done in the Posch et al. paper I sent a while back] in which we calculate (for each lake) mean summer temperature anomalies relative to the means for the years with data (i.e., take mean summer surface temperatures [Jun-Sep] for each year and determine the deviations from the 20-some year averages of mean summer surface temperatures). I know most of the temperature data only cover April-November, but might be worth seeing if there are trends in the max temperature before June as well (e.g., warmer or cooler spring surface lake temperatures.).""
