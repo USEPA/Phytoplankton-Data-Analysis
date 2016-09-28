@@ -1,7 +1,7 @@
 ---
-title: "Summer Max Investigation - Total Cell Density"
-author: " "
-date: "September 27, 2016"
+title: "Summer Max Investigation - Total Biovolume"
+author: "Megan Higgs"
+date: "September 4, 2016"
 output: html_document
 ---
 
@@ -13,24 +13,17 @@ library(dplyr)
 library(reshape2)
 library(lubridate)
 library(openxlsx)
-#setwd("~/repos/Phytoplankton-Data-Analysis/gitAnalysisFiles/analysis") #Change your working directory
+#setwd("~/repos/EPA TO57/analysis")  #Set your working directory
 ```
 
-Here is a look at using the maximum summer (June - Sept) blue-green algae total cell density as the response for each year compared to other counts.  
+Here is a look at using the maximum summer (June - Sept) blue-green algae total biovolume as the response for each year compared to other counts.  
 
 
-```{r loadData, eval=TRUE, include=FALSE}
-load("BGtotals_data.Rdata") #Loads dataframe BGtotals_data
-load("BGtotals_summer.Rdata") #Loads dataframe BGtotals_summer
-load("BGtotals_maxsummer.Rdata")  #Loads dataframe BGtotals_maxsummer
-
-
-## Best way to understand the plots is to run each chunck of plotting code just within R to
-## see the output, rather than using Knit HTML to make the HTML file.  You can also set it to
-## save all the plots in a folder when it compiles and usually I find this easiest using the
-## Knit to Word (even if I don't care about having the actual word document).
+```{r BGtotalcellsplot1, echo=FALSE, include=FALSE}
+load("BGtotals_data.Rdata")
+load("BGtotals_summer.Rdata")
+load("BGtotals_maxsummer.Rdata")
 ```
-
 
 
 #Comparing max to other counts
@@ -76,11 +69,6 @@ for (l in lake_list) {
 ```
 
 
-
-
-
-We need more investigation of when sampling is occurring and how much sampling is occuring with the maximum values we are reporting.   We will add investigations with temperature as soon as we get that data too.
-
 ```{r, eval=FALSE, include=FALSE}
 ## Need to grab unique sampling dates for each year
 BGtotals_data <- mutate(BGtotals_data, year=year(date1))
@@ -100,17 +88,6 @@ for (l in lake_list) {
 }
 ```
 
-```{r, eval=FALSE, include=FALSE}
-plot(samp_dates, year) #just to look at relationship with dates over years, but really can do that easily with ggplot below -- maybe don't need all of above stuff
-
-
-DatesPerYear_data <- data.frame()
-
-#check
-#with(filter(BGtotals_data, lake=="EFR", year=="1992", depth_cat=="0-3 ft"), unique(yday(date1)))
-
-## Only for summer data (summer max)
-```
 
 ```{r, eval=FALSE, include=FALSE}
 BGtotals_data <- mutate(BGtotals_data, year=year(date1))
@@ -128,7 +105,6 @@ for (l in lake_list) {
 ## Day of sampling date vs. day of the year of the sampling
 
 June 1 and September 30 are shown in orange horizontal lines.
-
 
 ```{r, eval=FALSE, include=FALSE}
 ## Generic version of day of year sampled over the years

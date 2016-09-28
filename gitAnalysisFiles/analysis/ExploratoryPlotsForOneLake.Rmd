@@ -1,0 +1,186 @@
+---
+title: "Exploratory Plots For One Lake"
+author: " "
+date: '`r format(Sys.Date(), "%B %d, %Y")`'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE)
+library(ggplot2)
+library(plyr)
+library(dplyr)
+library(reshape2)
+library(lubridate)
+library(openxlsx)
+setwd("~/repos/EPA TO57/analysis")
+```
+
+This document produces exploratory plots for blue-green algae in one reservoir.
+
+```{r loadDatafiles}
+load("BGtotals_data.Rdata") #Loads a data set named BGtotals_data
+load("BGtotals_maxsummer.Rdata") #Loads a date set named BGtotals_maxsummer
+```
+
+```{r chooselake}
+l <- "EFR"
+```
+
+#1. Plots of all data
+
+```{r BGtotalcellsplot1, echo=FALSE}
+#Panels for depth, colors by station
+ #Original scale
+  plot.dat <- filter(BGtotals_data, lake=="EFR", depth_cat %in% c("0-3 ft", "5 ft"))
+  ggplot(plot.dat) + 
+        geom_point(aes(x=date1, y=tot_cells_Ravg, colour=station)) +
+        geom_line(aes(x=date1, y=tot_cells_Ravg, colour=station)) + 
+        facet_wrap(~depth_cat, nrow=6, ncol=1) + 
+        ggtitle(paste("EFR", "Blue-Green Algae")) +
+        scale_x_date(date_minor_breaks = "1 year") +
+        ylab("Total cells/L") +
+        xlab("Sampling date")
+  
+ #Log scale
+  ggplot(plot.dat, aes(x=date1, y=log(tot_cells_Ravg+1))) + 
+        geom_point(aes(colour=station, shape=factor(ind_zero)), size=1.5) +
+        geom_line(aes(colour=station)) + 
+        facet_wrap(~depth_cat, nrow=2, ncol=1) + 
+        ggtitle(paste(l, "Blue-Green Algae - log scale")) +
+        scale_x_date(date_minor_breaks = "1 year") +
+        ylab("log(Total cells/L)") +
+        xlab("Sampling date") +
+        ylim(c(-1,25)) + #ggplot does plot the log(0)'s at whatever the minimum is for the plot on the y-axis
+        scale_shape_discrete(labels=c("count>0", "count=0")) +
+        theme(legend.title=element_blank())
+```
+
+#2. Plots of Maximum summer counts relative to all data
+```{r PlotMax_alldata}
+  plot.dat <- filter(BGtotals_data, lake==l, depth_cat=="0-3 ft")
+  plot.dat2 <- filter(BGtotals_data, month(date1) %in% c(5,6,7,8), lake==l, depth_cat=="0-3 ft")
+  plot.dat3 <- filter(BGtotals_maxsummer, lake==l)
+  #View(plot.dat2)
+  
+   ggplot() + 
+        geom_hline(aes(yintercept=23.03), colour="red", size=0.5)+
+        geom_hline(aes(yintercept=18.42), colour="pink", size=0.5) +
+        geom_hline(aes(yintercept=16.81), colour="orange", size=0.5) +
+        geom_point(data=plot.dat, aes(x=date1, y=log(tot_cells_Rmax)), col=1, shape=1, size=2) +
+        #geom_line(data=plot.dat, aes(x=date1, y=log(tot_cells_Rmax))) + 
+        geom_point(data=plot.dat2, aes(x=date1, y=log(tot_cells_Rmax)), col="orange", shape=16,
+                   size=1) +
+        #geom_line(data=plot.dat2, aes(x=date1, y=log(tot_cells_Rmax))) + 
+        geom_point(data=plot.dat3, aes(x=datemax_cells_Rmax, y=log(maxtot_cells_Rmax)),
+                    col="magenta", shape=10) +
+        geom_line(data=plot.dat3, aes(x=datemax_cells_Rmax, y=log(maxtot_cells_Rmax)),
+                    col=gray(0.3)) + 
+        ggtitle(paste(l, "Maximum Summer Total Cells/L BG")) +
+        scale_x_date(date_minor_breaks = "1 year") +
+        ylim(5,25) +
+        ylab("ln(Total cells/L)") + xlab("Sampling date")
+```
+
+#Just summer counts (June 1 - September 30)
+```{r Only20001_JuneSept, echo=FALSE}
+#load("BGtotals_data.Rdata")
+lake_list <- c("EFR")
+BGtotals_data <- dplyr::mutate(BGtotals_data, ind_June=ifelse(month(date1) %in% c(6,7,8,9), 0, 1))
+
+for (l in lake_list) {
+  plot.dat <- filter(BGtotals_data, lake==l, depth_cat %in% c("0-3 ft", "5 ft"),
+                      station=="20001")
+  d <- ggplot(plot.dat) + 
+        geom_point(aes(x=date1, y=log(tot_cells_Ravg), colour=as.factor(ind_June)), size=2) +
+        geom_line(aes(x=date1, y=log(tot_cells_Ravg))) + 
+        facet_wrap(~depth_cat, nrow=6, ncol=1) + 
+        ggtitle(paste(l, "20001- Blue-Green Algae - log scale")) +
+        scale_x_date(date_minor_breaks = "1 year") +
+        ylab("log(Total cells/L)") +
+        xlab("Sampling date") +
+        scale_color_discrete(labels=c("June-Aug", "Other")) +
+        theme(legend.title=element_blank())
+      print(d)
+}
+```
+
+# Break up by months
+```{r }
+ plot.dat <- filter(BGtotals_data, lake==l, depth_cat %in% c("0-3 ft"), station %in% c("20001","20004","20024","21001"))
+  d <- ggplot(plot.dat, aes(x=date1, y=log(tot_cells_Ravg))) + 
+        geom_line(aes(colour=station)) + 
+        geom_point(aes(colour=station), size=1.5) +
+        facet_wrap(~month.f, nrow=5, ncol=2) + 
+        ggtitle(paste(l, "Blue-Green Algae - MONTHS")) +
+        scale_x_date(date_minor_breaks = "1 year") +
+        ylab("log(Total cells/L)") +
+        xlab("Sampling date")
+      print(d)
+```
+
+
+## Panels for years
+
+```{r}
+day_in_yr <- as.Date(with(BGtotals_data, paste("1000","-",substring(date1,6,10), sep="")))
+BGtotals_data$day_in_yr <- day_in_yr
+
+BGtotals_maxsummer <- mutate(BGtotals_maxsummer, day_in_yr=as.Date(paste("1000","-",substring(datemax_cells_Rmax,6,10), sep="")),
+year.f=factor(year))
+```
+
+```{r, fig.width=8, fig.height=6}
+for (l in lake_list) {
+plot.dat <- filter(BGtotals_data, lake==l, depth_cat=="0-3 ft", !year.f=="1995")
+plot.dat2 <- filter(BGtotals_maxsummer, lake==l, !year==1995)
+d5 <-  ggplot(plot.dat) +
+  geom_point(data=plot.dat, aes(x=day_in_yr, y=log(tot_cells_Rmax), colour=station)) + 
+        geom_vline(aes(xintercept=as.numeric(as.Date("1000-06-01"))), colour="red", size=0.5) +
+        geom_vline(aes(xintercept=as.numeric(as.Date("1000-10-01"))), colour="red", size=0.5) +
+        geom_point(data=plot.dat2, aes(y=log(maxtot_cells_Rmax), x=day_in_yr, group=year.f), colour="red", size=3) +
+        geom_hline(aes(yintercept=23.03), colour="red", size=0.5)+
+        geom_hline(aes(yintercept=18.42), colour="pink", size=0.5) +
+        geom_hline(aes(yintercept=16.81), colour="orange", size=0.5) +
+        facet_wrap(~year.f, nrow=5, ncol=4) +
+        xlab("Day of year") +
+        ylab("ln(BG Total density)")+
+        ggtitle(paste(l)) +
+        scale_x_date(date_minor_breaks = "1 month")
+print(d5)
+}
+```
+
+
+## Focus on the max's
+
+```{r PlotMax2}
+  plot.dat3 <- filter(BGtotals_maxsummer, lake==l, year!=1987)
+
+   ggplot() + 
+        geom_hline(aes(yintercept=23.03), colour="red", size=0.5)+
+        geom_hline(aes(yintercept=18.42), colour="pink", size=0.5) +
+        geom_hline(aes(yintercept=16.81), colour="orange", size=0.5) +
+        geom_point(data=plot.dat3, aes(x=datemax_cells_Rmax, y=log(maxtot_cells_Rmax), size=num_sampdates_per_max),
+                    col="magenta", alpha=0.7) +
+        geom_line(data=plot.dat3, aes(x=datemax_cells_Ravg, y=log(maxtot_cells_Rmax)),
+                    col=gray(0.3)) + 
+        ggtitle(paste(l, "Maximum Summer Total Cells/L BG")) +
+        scale_size_continuous("# Dates")+
+        scale_x_date(date_minor_breaks = "1 year") +
+        ylim(5,25) +
+        ylab("ln(Total cells/L)") + xlab("Sampling date")
+```
+
+
+Could add:
+
+1. Plots from the original EFR analysis file
+
+2. Plots from the Seasonality Investigation
+
+3. Plots from the SummerMaxInvestigation 
+
+
+
+

@@ -1,6 +1,6 @@
 ---
-title: "Data Organization - makes files for further analysis"
-date: "updated September 14, 2016"
+title: "Data Organization - makes files for further analysis and checks data"
+date: "updated September 27, 2016"
 output:
   html_document:
     toc: true
@@ -8,30 +8,40 @@ output:
 ---
 
 ```{r, echo = FALSE, message=FALSE, warning=FALSE, error=FALSE}
+#**RUN
 library(ggplot2)
 library(plyr)
 library(dplyr)
 library(reshape2)
 library(lubridate)
 library(openxlsx)
-setwd("~/repos/EPA TO57/analysis")
+setwd("~/repos/EPA TO57/analysis")  #Set this to where you will store your .Rmd files
 ```
 
+This file load the big algae file and then creates the data sets used for subsequent analysis and has code for performing checks of the data file.  Statements starting with *with(* are for checking the data and are not necessary to run. 
+
+You will need to re-run everything all code chunks with a #**RUN as the first line when the algae file is updated.  *You do not need to run this if the algae file is not changed - just go straight to the analysis files you would like to use*
+
+
 ```{r ReadData}
+#**RUN
+# Read data in from the current algae file (Set directory for your computer)
 #alg <- read.xlsx("../data/Algae_20160804.xlsx", detectDates=TRUE)
 #alg <- read.xlsx("../data/Algae_20160829.xlsx", detectDates=TRUE)
-alg <- read.xlsx("../data/Algae_20160913.xlsx", detectDates=TRUE)
-dim(alg)
-names(alg)
+alg <- read.xlsx("../data/Algae_20160913.xlsx", detectDates=TRUE) 
+dim(alg) #check dimensions
+names(alg) #look at column names
 ```
+
 
 
 ```{r FixDate}
-#Make it so R recognizes date as a date
+#**RUN
+#Create a new column called date1 that R will recognize and manipulate as a date 
 alg <- mutate(alg, date1=as.Date(paste(substring(date,1,4),"-", substring(date,5,6),"-", substring(date,7,8), sep="")))
 ```
 
-#Subsetting data
+#Subsetting the data
 
 Data are initially subset by the following criteria:
 
@@ -41,66 +51,64 @@ Data are initially subset by the following criteria:
 ```{r SubsetData}
 #station_list <- with(alg, unique(station))
 
+#Make a list of the good stations (but these still have some hab samples)
 good_stations <- c("20001", "20014", "20002", "20022", "20007", "20004", "20015", "20003", "20005", "20008", "20009", "21002", "20198", "20132", "20059", "21001", "20178", "21005", "21004", "20141", "20011", "20047", "20035", "20024", "22404", "20140", "20006", "20063", "20039", "21203", "20012", "20179", "20085", "21101", "21003", "22001", "23001", "20041", "21000", "20025", "20027", "20030", "20026", "20031", "20028", "20417", "20010", "20147", "20029", "22409", "20016", "20136", "20112", "20044", "20037", "20019", "21078", "21007", "20018")
 length(good_stations)
 
+#Make new columns for combinations of names of lake, station, date, and depth
 alg2 <- mutate(filter(alg, station %in% good_stations), lake_station=paste(lake,station), 
                  lake_station_date=paste(lake,station,date), 
                  lake_station_date_depth=paste(lake,station,date,depth_ft))
+```
 
+```{r alg2Checks}
 with(alg2, length(unique(lake_station))) #138 unique lake/station combinations
 with(alg2, length(unique(lake_station_date))) #4169 different sampling occasions
 with(alg2, length(unique(lake_station_date_depth))) # 11772 total samples b/c multiple depths for each sampling occasion, but not all locations have all 4 depths (0,5,10,20)
+with(filter(alg2, hab==1), length(unique(lake_station_date))) #819 hab samples
 ```
 
 
+```{r alg3Create_nohab}
+#**RUN
+#Exclude the hab samples and make new column
+alg3 <- mutate(filter(alg2, hab==0), BV.um3.L=as.numeric(BV.um3.L))
+```
 
 
-```{r}
-#Including hab samples
-
-with(filter(alg2, hab==1), length(unique(lake_station_date))) #819 hab
-
-#Excluding hab samples
-alg3 <- mutate(filter(alg, station %in% good_stations, hab==0), BV.um3.L=as.numeric(BV.um3.L),
-                 lake_station=paste(lake,station), 
-                 lake_station_date=paste(lake,station,date), 
-                 lake_station_date_depth=paste(lake,station,date,depth_ft))
-
+```{r alg3Check}
+#Check alg3 without the hab samples
 with(alg3, length(unique(lake_station))) #131 unique lake/station combinations
 with(alg3, length(unique(lake_station_date))) #3465 different non-hab locations -- not 4169-819=3350, so some sampling occasions have hab samples and regular samples
 with(alg3, length(unique(lake_station_date_depth))) #10987
-
 ```
 
 
 ## Deal with duplicates for all taxa
 
-The qual_replicate column has Q's and R's.  For this analysis, we removed all observations with "Q's" and for field replicates, we calculate the average of the two replicate samples, as well as pulling the maximum of the two.  Both are available for analysis and can be compared later.
+The qual_replicate column has Q's and R's.  For this analysis, we removed all observations with "Q's",  and for field replicates we calculate (1) the average of the two samples and (2) the maximum of the two samples.  
 
-UPDATE: For new data set as of 9/13/16, there are no 'R's or Q's included. Will is looking into this.  Also look at the Wiki for how Matt created the 'R's and Q's to begin with.  If they were just for HAB samples, then we might not need the rest of this code.
+*UPDATE NOTE: In earlier data files there were R to deal with, but with the new data set as of 9/13/16, there are no 'R's or Q's included.  Also look at the Wiki for how Matt created the 'R's and Q's to begin with.  If R's are only found with HAB samples, then this code will not be needed for this analysis, but I am leaving this code in for now because it doesn't hurt. If there aren't any R's, then the responses are all the same (result value = average result = max result), so it doesn't matter which one you are using.*
 
 
 ```{r InvestigateDuplicates1, eval=FALSE, include=FALSE}
 #This code chunk is just to check things and does not need to be run
 
-#WHY ARE THERE NO "R"'s adnd "Q"'s now?
-with(alg3, unique(qual_replicate)) #NA, "R", "Q"
+with(alg3, unique(qual_replicate)) #NA, "R", "Q" (As of 9/14 file, has only NA)
 #alg3 %>% group_by(lake, station, date1, qual_replicate) %>% summarise(n())
+
+dim(alg3)
+with(alg3, sum(is.na(qual_replicate)==TRUE)) #all rows have NAs
 
 ###To look specifically at a date with field duplicates "R"
 #select(filter(alg3, date=="20020710", depth_ft==0), date1, station, lake, taxa, depth_ft, cell_per_l, qual_replicate)
-
-#To look specifically at a date with "Q"'s and "R"'s
-#It looks like Q's are actually repeat values already included as R's, so I am going to remove
-select(arrange(filter(alg3, date=="20070911", depth_ft==0), date1, station), date1, station, lake, taxa, depth_ft, cell_per_l, qual_replicate)
 
 alg3 %>% group_by(lake, station, date1, qual_replicate) %>% dplyr::summarise(n())
 ```
 
 
 ```{r DealWith_QandR, include=FALSE}
-#with(alg3, sum(is.na(qual_replicate)==TRUE))
+#**RUN
 alg3_noQ <- filter(alg3, is.na(qual_replicate)==TRUE|qual_replicate=="R")
 #dim(alg3_noQ) 
 #with(alg3_noQ, sum(is.na(qual_replicate)==FALSE)) 
@@ -108,20 +116,24 @@ alg3_noQ <- filter(alg3, is.na(qual_replicate)==TRUE|qual_replicate=="R")
 #Just grab the ones with R's because I think the NA's are messing it up
 alg3_Ronly <- filter(alg3_noQ, qual_replicate=="R")
 alg3_maxR <- alg3_Ronly %>% 
-                    dplyr::group_by(lake_station, depth_ft, date1, taxa) %>%  
-                        dplyr::summarise(cells_Rmax=max(cell_per_l), bv_Rmax=as.numeric(max(BV.um3.L)), 
-                                         cells_Ravg=mean(cell_per_l), bv_Ravg=as.numeric(max(BV.um3.L)),
-                                         toxin=toxin[1], sheet_id=sheet_id[1], Taxa.Type=Taxa.Type[1], 
-                                         lake=lake[1], station=station[1])
+              dplyr::group_by(lake_station, depth_ft, date1, taxa) %>%  
+                 dplyr::summarise(cells_Rmax=max(cell_per_l), bv_Rmax=as.numeric(max(BV.um3.L)), 
+                                    cells_Ravg=mean(cell_per_l), bv_Ravg=as.numeric(max(BV.um3.L)),
+                                    toxin=toxin[1], sheet_id=sheet_id[1], Taxa.Type=Taxa.Type[1], 
+                                    lake=lake[1], station=station[1])
 
 alg3_NAonly <- dplyr::select(mutate(filter(alg3_noQ, is.na(qual_replicate)==TRUE), 
-                          cells_Rmax=cell_per_l, bv_Rmax=as.numeric(BV.um3.L),
-                          cells_Ravg=cell_per_l, bv_Ravg=as.numeric(BV.um3.L)),
-                      lake_station, depth_ft, date1, taxa, cells_Rmax, bv_Rmax, cells_Ravg, bv_Ravg,
-                      toxin, sheet_id, Taxa.Type, lake, station)
+                      cells_Rmax=cell_per_l, bv_Rmax=as.numeric(BV.um3.L),
+                      cells_Ravg=cell_per_l, bv_Ravg=as.numeric(BV.um3.L)),
+                      lake_station, depth_ft, date1, taxa, cells_Rmax, bv_Rmax, 
+                      cells_Ravg, bv_Ravg, toxin, sheet_id, Taxa.Type, lake, station)
                   
 alg3_final1 <- bind_rows(alg3_NAonly, alg3_maxR)
-#dim(alg_bg_final)
+
+#alg3_final1 contains new columns cells_Rmax = maximum of the two R samples for cell_per_l,
+# cells_Ravg for average of the two R samples for cell_per_l, and then the analogous two
+# for biovolume (bv_Rmax and bv_Ravg)
+
 ```
 
 
@@ -130,8 +142,6 @@ alg3_final1 <- bind_rows(alg3_NAonly, alg3_maxR)
 There are 12 different depths in the data, with 999 being the most problematic as it indicates depth is unknown.  These occur mainly in 1998 sampling.  They will not be included in the analysis until a depth is assigned to them, and are included in initial plots as "unknown".
 
 ```{r checkDepth, eval=FALSE, include=FALSE}
-#This code chunk just checks things and does not need to be run
-
 #Table of number of unique stations with measurements at the different depths
 # So, 58 stations have unknown depths for at least some of the samples
 with(alg3, tapply(lake_station, depth_ft, function(x) length(unique(x))))
@@ -144,9 +154,10 @@ with(alg3, unique(lake_station[depth_ft==999]))
 with(alg3, unique(year[depth_ft==999]))
 ```
 
-Make a new depth column called depth_cat
+
 
 ```{r MakeNewDepthcolumn}
+#**RUN
 #Make new depth column depth_cat using breaks at 0, 5, 7, 14, 20, 21, 1000 to create 6 depth categories "0-3 ft", "5 ft", "7-10 ft", "14-17 ft", "20 ft", "unknown".  There is also one that lumps 0-5 together, but we haven't used this one
 
 alg3_final <- mutate(alg3_final1, depth_cat=cut(as.numeric(depth_ft), breaks=c(0, 5, 7, 14, 20, 21, 1000), right=FALSE, labels=c("0-3 ft", "5 ft", "7-10 ft", "14-17 ft", "20 ft", "unknown")), depth_cat05=cut(as.numeric(depth_ft), breaks=c(0, 6, 11, 20, 21, 1000), right=FALSE, labels=c("0-5 ft", "7-10", "14-17 ft", "20 ft", "unknown")))
@@ -160,7 +171,6 @@ save(alg3_final, file="DataForAnalysis_14Sept2016.Rdata")
 
 ```{r LookAtMissingness, eval=FALSE, include=FALSE}
 #This code does not need to be run, but helps explore where missing values are
-
 alg3_final2 <- dplyr::mutate(alg3_final, lake_station_date=paste(lake,station,date1))
 
 with(alg3_final2, length(unique(lake_station))) #131 unique lake/station combinations
@@ -175,40 +185,28 @@ with(alg3, length(unique(lake_station_date_depth)))
 # Look at Blue-Green Algae
 with(filter(alg3_final2, depth_cat=="0-3 ft", Taxa.Type=="Blue-Green Algae"), length(unique(lake_station_date))) #2945 (was 3542 or close to that in last data set)
 with(filter(alg3_final2, depth_cat=="0-3 ft", Taxa.Type=="Blue-Green Algae"), length(unique(lake_station))) ##120
-
 ```
-
-
-
-
-
-
-
-
-# Select division for the analysis
-
-The different groupings we will look at are Diatoms, Green Algae, Toxin producers, total phytoplankton
-
-
-
 
 
 
 # Create response variables
 
-## Create BG total cell density and total biovolume for every unique sample
+Here, we create response variables for total cells/liter and biovolume for cyanobacteria, all taxa combined, and toxin producing species.  We also calculate the proportion of the total count or biovolume that is cyanobacteria.  
+
+## Create Cyanobacteria (BG) total cell density and total biovolume for every unique sample
 
 ```{r createBGtotals, include=FALSE}
+#**RUN
 ## Creates a dataframe with total cells and total biovolume for B-G Algae,
 ## and uses both the Ravg and Rmax for dealing with duplicates
 
-#Method 1: This EXCLUDES all stations with NO Blue-Green Algae entries in the Taxa.Type column
-# Therefore, we're possibly excluding zeroes that should be included
+#Method 1: This EXCLUDES all stations with NO Blue-Green Algae entries in the Taxa.Type column (not including possible real zeroes - the difference between the two methods should get smaller as the data set gets cleaner, assuming we expect at least a small amount of BG algae in each sample).
 alg_bg <- filter(alg3_final, Taxa.Type=="Blue-Green Algae")
 
 BGtotals_no0s_data <- alg_bg %>% 
                  group_by(lake, station, date1, depth_cat) %>%
-                 dplyr::summarise(tot_cells_Rmax=sum(cells_Rmax), tot_bv_Rmax=sum(bv_Rmax),
+                 dplyr::summarise(tot_cells_Rmax=sum(cells_Rmax),
+                                  tot_bv_Rmax=sum(bv_Rmax),
                                   tot_cells_Ravg=sum(cells_Ravg), tot_bv_Ravg=sum(bv_Ravg))
 dim(BGtotals_no0s_data) #10192 x 5
 dim(filter(BGtotals_no0s_data, depth_cat=="0-3 ft")) #2945 x 8
@@ -217,6 +215,7 @@ save(BGtotals_no0s_data, file="BGtotals_no0s_data.Rdata")
 View(BGtotals_no0s_data[1:100,])
 
 #Method 2: This should include all the stations that have zero Blue-Green Algae
+## THIS IS WHAT WE ARE USING FOR ANALYSIS ##
 BGtotals_data <- alg3_final %>% 
                  group_by(lake, station, date1, depth_cat) %>%
                  dplyr::summarise(
@@ -231,7 +230,7 @@ BGtotals_data <- mutate(BGtotals_data, month.f=as.factor(month(date1)), year.f=a
                          lake_station_date=paste(lake,station,date1), year=year(date1))
 
 save(BGtotals_data, file="BGtotals_data.Rdata")
-View(filter(BGtotals_data, station=="20005")[1:100,])
+#View(filter(BGtotals_data, station=="20005")[1:100,])
 ```
 
 
@@ -265,9 +264,11 @@ with(filter(BGtotals_data, depth_cat=="0-3 ft"), sort(unique(lake_station[tot_bv
 with(filter(BGtotals_data, depth_cat=="0-3 ft"), sort(unique(lake_station_date[tot_bv_Rmax==0])))
 ```
 
+
 ## Create maximum summer BG total cell density and total biovolume for each year and each reservoir
 
 ```{r createSummerMaxBGtotals, eval=TRUE, include=FALSE}
+#**RUN
 #Create response variable that is the maximum from June through September for each year
 
 #This is where the months included in summer are defined: 6,7,8,9
@@ -283,8 +284,7 @@ BGtotals_maxsummer <- BGtotals_summer  %>%
                         maxtot_bv_Ravg=max(tot_bv_Ravg),
                         maxtot_cells_Rmax=max(tot_cells_Rmax),
                         maxtot_bv_Rmax=max(tot_bv_Rmax),
-                        datemax_cells_Ravg=max(date1[tot_cells_Ravg==max(tot_cells_Ravg)]),
-                        datemax_cells_Rmax=max(date1[tot_cells_Rmax==max(tot_cells_Rmax)]), 
+                     datemax_cells_Ravg=max(date1[tot_cells_Ravg==max(tot_cells_Ravg)]),                        datemax_cells_Rmax=max(date1[tot_cells_Rmax==max(tot_cells_Rmax)]), 
                         datemax_bv_Ravg=max(date1[tot_bv_Ravg==max(tot_bv_Ravg)]),
                         datemax_bv_Rmax=max(date1[tot_bv_Rmax==max(tot_bv_Rmax)]),
                         num_samps_per_max=length(tot_cells_Rmax),
@@ -298,8 +298,8 @@ save(BGtotals_maxsummer, file="BGtotals_maxsummer.Rdata")
 
 These totals make up the denominator for the relative (i.e. dominance) measures, but we also calculate them separately so they can be analyzed on their own.
 ```{r createTotalCellsALL, include=FALSE}
-
-#NOTE:  NEED TO THINK MORE ABOUT THE DIFFERENCES BETWEEN THE TWO ALL TAXA SUMS -- WHY DOES THE NA.OMIT GIVE LESS O'S THAN NA'S THAT ARE PICKED UP IN FIRST ONE?
+#**RUN
+#NOTE:  NEED TO THINK MORE ABOUT THE DIFFERENCES BETWEEN THE TWO ALL TAXA SUMS -- WHY DOES THE NA.OMIT GIVE LESS O'S THAN NA'S THAT ARE PICKED UP IN FIRST ONE?  This should clear up as data are further cleaned
 
 #Method1: Not omitting NA's
 totals_alltaxa_data <- alg3_final %>% 
@@ -307,8 +307,11 @@ totals_alltaxa_data <- alg3_final %>%
                  summarise(tot_cells_Ravg=sum(cells_Ravg), tot_bv_Ravg=sum(bv_Ravg),
                            tot_cells_Rmax=sum(cells_Rmax), tot_bv_Rmax=sum(bv_Rmax))
 save(totals_alltaxa_data, file="totals_alltaxa_data.Rdata")
+```
+
+```{r checkTotals_alltaxa}
 dim(totals_alltaxa_data) #10980 x 8
-#View(totals_alltaxa_data[1:100,])
+View(totals_alltaxa_data[1:100,])
 
 #checks
 with(totals_alltaxa_data, sum(tot_cells_Ravg==0)) #So none of the denominators for relative biovolume
@@ -320,6 +323,7 @@ with(filter(totals_alltaxa_data, depth_cat=="0-3 ft"), sum(is.na(tot_bv_Ravg))) 
 ```
 
 ```{r totalcellsALL_noNAs, include=FALSE}
+#**RUN
 #Omits NA's in calcuations - if all are NA's, will give a 0
 totals_alltaxaNONA_data <- alg3_final %>% 
                  group_by(lake, station, date1, depth_cat) %>%
@@ -329,6 +333,9 @@ totals_alltaxaNONA_data <- mutate(totals_alltaxaNONA_data, lake_station_date=pas
                                   lake_station=paste(lake,station))
 
 save(totals_alltaxaNONA_data, file="totals_alltaxaNONA_data.Rdata")
+```
+
+```{r checkTotalsalltaxsNONA}
 dim(totals_alltaxaNONA_data) #10980 x 6
 #if all values are NA's a 0 will be returned for the sum
 #View(totals_alltaxaNONA_data[1:100,])
@@ -341,13 +348,13 @@ with(totals_alltaxaNONA_data, sum(tot_bv_Ravg==0)) #119
 with(filter(totals_alltaxaNONA_data, depth_cat=="0-3 ft"), sum(tot_bv_Ravg==0)) #24
 with(filter(totals_alltaxaNONA_data, depth_cat=="0-3 ft"), unique(lake_station_date[tot_bv_Ravg==0]))
 with(totals_alltaxaNONA_data, sum(is.na(tot_bv_Ravg))) #0 -- which matches the number of NAs in the relative biovolume
-
 ```
 
 
 ##Create totals over all taxa just for samples in the summer
 
 ```{r createSummerAllTaxaTotals }
+#**RUN
 #FOR SUMMER and 0-3 ft
 # Make sure the summer definition is the same here as for BGtotals_maxsummer
 ALLtotals_summer <- mutate(filter(totals_alltaxa_data, month(date1) %in% c(6,7,8,9), depth_cat=="0-3 ft"), year=year(date1))
@@ -370,11 +377,12 @@ save(ALLtotals_maxsummer, file="ALLtotals_maxsummer.Rdata")
 ```
 
 
-## Relative cells/L - Blue-Green algae dominance
+## Relative cells/L - "Blue-Green algae dominance""
 
 Create the proportion of the total count that is BG algae
 
 ```{r createBGproportion, include=FALSE}
+#**RUN
 BGdom_data <- alg3_final %>% 
                  group_by(lake, station, date1, depth_cat) %>%
                  dplyr::summarise(
@@ -384,12 +392,12 @@ BGdom_data <- alg3_final %>%
                   rel_bv_Rmax=(sum(na.omit(bv_Rmax[Taxa.Type=="Blue-Green Algae"]))/sum(bv_Rmax)))
 
 BGdom_data <- mutate(BGdom_data, month.f=as.factor(month(date1)))
-head(BGdom_data)
 save(BGdom_data, file="BGdom_data.Rdata")
 ```
 
 ```{r checkBGproportions, eval=FALSE, include=FALSE}
 #checks
+head(BGdom_data)
 with(BGdom_data, sum(is.na(rel_cells_Ravg)==TRUE)) #0 - without the na.omit above there are over 9000 NA's for any station/date/depth that has an NA in Taxa.Type 
 
 with(BGdom_data, sum(is.na(rel_bv_Ravg))) #1074 - still have the same number of na's for rel_bv
@@ -416,6 +424,7 @@ with(BGdom_data, sum(na.exclude(rel_bv_Ravg)==0)) #868
 
 
 ```{r createBGdominanceNONA, include=FALSE}
+#**RUN
 #Same calculations as above, but using na.omit.  When the dataset gets all filled in there should
 # not be a difference between the two methods for the different response variables
 BGdom_data_NONA <- alg3_final %>% 
@@ -427,13 +436,13 @@ BGdom_data_NONA <- alg3_final %>%
                   rel_bv_Rmax=(sum(na.omit(bv_Rmax[Taxa.Type=="Blue-Green Algae"]))/sum(na.omit(bv_Rmax))))
 
 BGdom_data_NONA <- mutate(BGdom_data, month.f=as.factor(month(date1)))
-head(BGdom_data_NONA)
 save(BGdom_data_NONA, file="BGdom_data_NONA.Rdata")
 ```
 
 
 ```{r checkBGdominanceNONA, include=FALSE}
 #checks
+head(BGdom_data_NONA)
 with(BGdom_data_NONA, sum(is.na(rel_cells_Ravg))) #0 - without the na.omit above there are over 9000 NA's for any 
                                                    # station/date/depth that has an NA in Taxa.Type 
 with(BGdom_data_NONA, sum(is.na(rel_bv_Ravg))) #1074 - still have the same number of na's for rel_bv  #874
@@ -460,6 +469,7 @@ with(BGdom_data, sum(na.exclude(rel_bv_Ravg)==0)) #868
 
 
 ```{r createMaxSummerBGproportions}
+#**RUN
 #Maximum summer proportion of BG total celss and biovolume
 BGdom_summer <- mutate(filter(BGdom_data_NONA, month(date1) %in% c(6,7,8,9), depth_cat=="0-3 ft"), year=year(date1))
 BGdom_maxsummer <- BGdom_summer  %>% 
@@ -482,7 +492,7 @@ save(BGdom_maxsummer, file="BGdom_maxsummer.Rdata")
 
 
 ```{r DebugNAsInDom, eval=FALSE, include=FALSE}
-## USED THIS TO JUST CHECK SUMMARISE() 
+## USED THIS TO JUST CHECK SUMMARISE() - do not need to run it
 ## #This code is used to understand where the NAs were coming from when calculating BG dominance
 
 alg3_final2 <- mutate(alg3_final, lake_station_date=paste(lake,station,date1), lake_station_date_depth=paste(lake,station,date1,depth_ft))
@@ -521,6 +531,7 @@ with(alg3_final2, sum(cells_Ravg[lake_station_date_depth=="EFR 20001 1993-07-14 
 # Toxin producing species
 
 ```{r createToxinTotals_noNAs, include=FALSE}
+#**RUN
 toxin_totals <- alg3_final %>% 
                  group_by(lake, station, date1, depth_cat) %>%
                  summarise(tot_cells_Ravg=sum(na.omit(cells_Ravg[toxin==TRUE])),
@@ -532,6 +543,7 @@ save(toxin_totals, file="toxin_totals.Rdata")
 
 
 ```{r createToxinSummerMax, include=FALSE}
+#**RUN
 toxin_totals_summer <- mutate(filter(toxin_totals, month(date1) %in% c(6,7,8,9), depth_cat=="0-3 ft"), year=year(date1))
 toxin_totals_maxsummer <- toxin_totals_summer  %>% 
                  group_by(lake, year) %>%
@@ -548,12 +560,48 @@ toxin_totals_maxsummer <- toxin_totals_summer  %>%
                         num_sampdates_per_max=length(unique(date1)))
 
 
-   #Issue --- when there are only 0's for a particular year-lake combination and there are multiple occasions
-   # with zeroes - then there are multiple dates for the max, which messes with this.  I'm just going to choose
-   # the maximum date when this is the case. 
-
+   #Issue --- when there are only 0's for a particular year-lake combination and there are multiple occasions with zeroes - then there are multiple dates for the max, which messes with this.  I'm just choosing the maximum date when this is the case. 
 
 save(toxin_totals_maxsummer, file="toxin_totals_maxsummer.Rdata")
+```
+
+
+## Number of distinct taxa detected per lake, station, date, depth
+
+An assumption behind the total counts is that the effort going into the counts is constant over time.  Ideally, we would have a list of possible taxa and record whether each showed up or not -- so that we know how many were "looked" for and can model presence/absence as well as counts.  So, we need to assume that any taxa recorded at one time would have been recorded if it showed up in another time.  Sounds like this is not a bad assumption, but because methods, labs, etc. have changed, it should be thought about.  By looking at the number of taxa, we don't know that it reflects data collection procedures or just the actual number of taxa available, but I think it is at least worth looking at -- if it remains fairly constant over time then this can possibly help with your justifcation of effort.
+
+This gives us the number of taxa going into each total, which we should keep track of as we move to creating totals.  This is really just giving the number of observations at each lake x station x date x depth combination, which should be the number of "taxa" going into the total counts (it is at least the number of different counts going into the total).
+```{r BG_numtaxa, include=FALSE}
+#**RUN
+# Note this is all taxa in sample and not split up by BG, etc., though could easily be 
+# extended to do that.  It just give the number of rows in the data set associated with
+# each lake-station-date-depth combination, which should be fine when there are no field
+# duplicates (but think through this more before putting too much weight on it)
+num_taxa_data <- alg3_final %>% 
+                 group_by(lake, station, date1, depth_cat) %>% 
+                 dplyr::summarise(num_taxa=n())
+dim(num_taxa_data) #10980 x 5
+
+save(num_taxa_data, file="num_taxa_data.Rdata")
+#BGnum_genus_data <- alg_bg %>% group_by(lake, station, date1, depth_cat) %>% dplyr::summarise(num_taxa=n())
+#dim(BGnum_taxa_data) #10632 x 5
+
+
+BGnum_taxa_data <- alg3_final %>% 
+                 group_by(lake, station, date1, depth_cat) %>% 
+                 dplyr::summarise(num_taxa=length(cells_Rmax[Taxa.Type=="Blue-Green Algae"]))
+dim(BGnum_taxa_data) #10980 x 5
+#Could also filter by BG first, but this then gets rid of all samples with no blue green algae
+save(BGnum_taxa_data, file="BGnum_taxa_data.Rdata")
+
+
+TOXINnum_taxa_data <- alg3_final %>% 
+                 group_by(lake, station, date1, depth_cat) %>% 
+                 dplyr::summarise(num_taxa=length(cells_Rmax[toxin==TRUE]))
+dim(TOXINnum_taxa_data) #10980 x 5
+
+save(TOXINnum_taxa_data, file="TOXINnum_taxa_data.Rdata")
+
 ```
 
 
@@ -578,36 +626,13 @@ alg_bg <- filter(alg3_final, Taxa.Type=="Blue-Green Algae")
 #dim(alg_bg) #65070 x 13 -- with new data set went up to 72310
 ```
 
-## Number of distinct taxa detected per lake, station, date, depth
-
-Should use genus to do this and it is just exploratory.  We are not planning to use this a response variable, but it would be nice to know how many taxa are going into each count and possible include that information.  Interesting to look at the relationship between cell counts and/or biovolume and number of taxa identified in a sample.
-
-This gives us the number of taxa going into each total, which we should keep track of as we move to creating totals.  This is really just giving the number of observations at each lake x station x date x depth combination, which should be the number of "taxa" going into the total counts (it is at least the number of different counts going into the total).
-```{r BG_numtaxa, include=FALSE}
-#NOT SURE I NEED THIS, BUT SHOULD LOOK AT THIS BECAUSE COULD CATCH SOME REMAINING HAB SAMPLES
-BGnum_taxa_data <- alg_bg %>% group_by(lake, station, date1, depth_cat) %>% dplyr::summarise(num_taxa=n())
-dim(BGnum_taxa_data) #10697 x 5
-
-save(BGnum_taxa_data, file="BGnum_taxa_data.Rdata")
-#BGnum_genus_data <- alg_bg %>% group_by(lake, station, date1, depth_cat) %>% dplyr::summarise(num_taxa=n())
-#dim(BGnum_taxa_data) #10632 x 5
-
-```
 
 
-
-
-
-
-
-
-# Calculations for number of samples per station/reservoir/date
+## Calculations for number of samples per station/reservoir/date
 
 This code is probably not needed now, as I think it can be done as part of above code.
 I am leaving it in here for now, just in case this is of interest later.  
 
-I do think we should be checking the number of taxa going into each count and make sure
-they are approximately where we would expect them.
 
 ## Number of sampling occasions for each station in each reservoir
 
@@ -691,7 +716,7 @@ summer_per_station <- apply(summer_samps_year, 1, function(x) sum(x>0))
 
 
 
-# Plots used in originally getting to know the data
+# Plots used to originally understand the data
 
 ```{r SamplingDatesPerStation, echo=FALSE}
 #with(num_samples, barplot(samples_per_station))

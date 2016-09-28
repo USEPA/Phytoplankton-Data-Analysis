@@ -1,0 +1,119 @@
+---
+title: "Compare Measures"
+author: " "
+date: "September 27, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, fig.with=7, fig.height=4, warning=FALSE, message=FALSE)
+library(ggplot2)
+library(plyr)
+library(dplyr)
+library(reshape2)
+library(lubridate)
+library(openxlsx)
+#setwd("~/repos/EPA TO57/analysis") #SET TO YOUR WORKING DIRECTORY
+```
+
+In this document, we compare maximum summer cell density and biovolume for (1) Total across all taxa, (2) Total for cyanobacteria, (3) Total for toxin-producing. We also compare proportion cyanobacteria between cell density and biovlume. 
+
+```{r loaddata}
+#Load totals
+load("totals_alltaxa_data.Rdata")
+load("totals_alltaxaNONA_data.Rdata")
+load("ALLtotals_maxsummer.Rdata")
+
+#Load cyanobacteria totals
+load("BGtotals_data.Rdata")
+load("BGtotals_maxsummer.Rdata")
+
+#Load toxin totals
+load("toxin_totals.Rdata")
+load("toxin_totals_maxsummer.Rdata")
+
+#Load proportions cyanobacteria
+load("BGdom_data.Rdata")
+load("BGdom_data_NONA.Rdata")
+load("BGdom_maxsummer.Rdata") #created using the NONA data set (0's in place of NAs)
+```
+
+
+
+#1. Comparing Summer Maximum Total Cell Density for all taxa, cyanobacteria, and toxin producing
+
+```{r}
+ lake_list <- unique(BGdom_maxsummer$lake)
+ for (l in lake_list) {
+  d <- ggplot() + 
+        geom_point(data=filter(BGtotals_maxsummer, lake==l), aes(x=datemax_cells_Rmax, 
+                      y=log(maxtot_cells_Rmax), size=num_sampdates_per_max, colour="cyan"), alpha=0.7) +
+        geom_line(data=filter(BGtotals_maxsummer, lake==l), aes(x=datemax_cells_Ravg, y=log(maxtot_cells_Rmax)),
+                    col=gray(0.3)) + 
+       geom_point(data=filter(ALLtotals_maxsummer, lake==l), aes(x=datemax_cells_Rmax, 
+                      y=log(maxtot_cells_Rmax), size=num_sampdates_per_max, colour=gray(0.2)), alpha=0.7) +
+        geom_line(data=filter(ALLtotals_maxsummer, lake==l), aes(x=datemax_cells_Ravg, 
+                      y=log(maxtot_cells_Rmax)), col=gray(0.3)) +
+        geom_point(data=filter(toxin_totals_maxsummer, lake==l), aes(x=datemax_cells_Rmax, 
+                      y=log(maxtot_cells_Rmax), size=num_sampdates_per_max, colour="red"), alpha=0.7) +
+        geom_line(data=filter(toxin_totals_maxsummer, lake==l), aes(x=datemax_cells_Ravg,
+                      y=log(maxtot_cells_Rmax)),col=gray(0.3)) +
+        ggtitle(paste(l, "Maximum Summer Total Cell Density")) +
+        scale_size_continuous("# Dates")+
+        scale_x_date(date_minor_breaks = "1 year") +
+        scale_colour_manual(" ", values=c(gray(0.2), "cyan", "red"), labels=c( "All taxa", "Cyanobacteria", "Toxin producing")) +
+        ylab("ln(Total cells/L)") + xlab("Sampling date")
+  print(d)
+}
+```
+
+
+#2. Comparing Summer Maximum Total Biovolume for all taxa, cyanobacteria, and toxin producing
+
+```{r}
+ lake_list <- unique(BGdom_maxsummer$lake)
+ for (l in lake_list) {
+  d <- ggplot() + 
+        geom_point(data=filter(BGtotals_maxsummer, lake==l), aes(x=datemax_cells_Rmax, 
+                      y=log(maxtot_bv_Rmax), size=num_sampdates_per_max, colour="cyan"), alpha=0.7) +
+        geom_line(data=filter(BGtotals_maxsummer, lake==l), aes(x=datemax_cells_Ravg, y=log(maxtot_bv_Rmax)),
+                    col=gray(0.3)) + 
+       geom_point(data=filter(ALLtotals_maxsummer, lake==l), aes(x=datemax_cells_Rmax, 
+                      y=log(maxtot_bv_Rmax), size=num_sampdates_per_max, colour=gray(0.2)), alpha=0.7) +
+        geom_line(data=filter(ALLtotals_maxsummer, lake==l), aes(x=datemax_cells_Ravg, y=log(maxtot_bv_Rmax)),
+                    col=gray(0.3)) +
+        geom_point(data=filter(toxin_totals_maxsummer, lake==l), aes(x=datemax_cells_Rmax, 
+                      y=log(maxtot_bv_Rmax), size=num_sampdates_per_max, colour="red"), alpha=0.7) +
+        geom_line(data=filter(toxin_totals_maxsummer, lake==l), aes(x=datemax_cells_Ravg, y=log(maxtot_bv_Rmax)),
+                    col=gray(0.3)) +
+        ggtitle(paste(l, "Maximum Summer Total Biovolume")) +
+        scale_size_continuous("# Dates")+
+        scale_x_date(date_minor_breaks = "1 year") +
+        scale_colour_manual(" ", values=c(gray(0.2), "cyan", "red"), labels=c( "All taxa", "Cyanobacteria", "Toxin producing")) +
+        ylab("ln(Total Biovolume)") + xlab("Sampling date")
+  print(d)
+}
+```
+
+#3. Compare maximum summer proportion of cyanobacteria between cell density and biovolume
+```{r}
+ lake_list <- unique(BGdom_maxsummer$lake)
+ for (l in lake_list) {
+  d <- ggplot() + 
+        geom_point(data=filter(BGdom_maxsummer, lake==l), aes(x=datemax_cells_Rmax, 
+                      y=maxrel_cells_Rmax, size=num_sampdates_per_max, colour="green"), alpha=0.6) +
+        geom_line(data=filter(BGdom_maxsummer, lake==l), aes(x=datemax_cells_Ravg, y=maxrel_cells_Rmax),
+                    col=gray(0.3)) + 
+        geom_point(data=filter(BGdom_maxsummer, lake==l), aes(x=datemax_cells_Rmax, 
+                      y=maxrel_bv_Rmax, size=num_sampdates_per_max, colour="blue"), alpha=0.6) +
+        geom_line(data=filter(BGdom_maxsummer, lake==l), aes(x=datemax_cells_Ravg, y=maxrel_bv_Rmax),
+                    col=gray(0.3)) +
+        ggtitle(paste(l, "Maximum Summer Proportion Cyanobacteria")) +
+        scale_size_continuous("# Dates")+
+        scale_x_date(date_minor_breaks = "1 year") +
+        scale_colour_manual(" ", values=c("green", "blue"), labels=c( "Biovolume", "Cell Density")) +
+        ylim(0,1) +
+        ylab("Proportion") + xlab("Sampling date")
+  print(d)
+ }
+```
