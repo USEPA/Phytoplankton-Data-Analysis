@@ -30,8 +30,8 @@ library(reshape2)
 options(stringsAsFactors=FALSE)
 WRITE<- TRUE
 
-OUT   <- read.table("output/reducedFileSurvey_2016-09-27.csv", sep = ",", header = TRUE, as.is = TRUE)
-INFO <- read.table("output/reducedFileList_2016-09-27.csv", sep = ",", as.is = TRUE, header = TRUE)
+OUT   <- read.table("output/reducedFileSurvey_2016-09-30.csv", sep = ",", header = TRUE, as.is = TRUE)
+INFO <- read.table("output/reducedFileList_2016-09-30.csv", sep = ",", as.is = TRUE, header = TRUE)
 
 
 ## Several sheets are not processed, for various reasons.
@@ -230,4 +230,4 @@ system( cmd)
 
 
 ## Next, run algaeCheck.R , which writes the 'clean' algae file
-source("cleanAlgaeFile.R")
+source("rscripts/cleanAlgaeFile.R")
