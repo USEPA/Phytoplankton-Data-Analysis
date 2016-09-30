@@ -1,23 +1,40 @@
-### master file used to run all low level scripts.
+################
+#### Will Barnett, August 2016
+################
+
+
+################
+#### This is the master file used to run all low level scripts.
+#### After creating a list of all of the sheets in the data files,
+#### this script reads in all of the data. It also sources a script
+#### that cleans the algae data set.
+################
 rm(list = ls() )
 
-# homeDir <- "/Users/mattpocernich/repos/epa_2013/2013/TO 0016/analysis/Phytoplankton-Data-Analysis"
-homeDir <- "~/Documents/Neptune/svn/EPA-ORD/trunk/2013/TO 0016/analysis/Phytoplankton-Data-Analysis"
+
+## Working directory should be set by the .Rproj file
+homeDir <- getwd()
+# homeDir <- "/Users/wbarnett/Documents/Neptune/svn/EPA/trunk/2015/TO 57/analysis/Phytoplankton"
 setwd(homeDir)
 
+## Libraries and helper functions
 source("rscripts/helperFunctions.R")
+library(openxlsx)
+library(readxl)
+library(plyr)
+library(reshape2)
 #source("rscripts/chunck_check.R")
-library(XLConnect)
+
+
 
 options(stringsAsFactors=FALSE)
 WRITE<- TRUE
 
-# OUT   <- read.table("output/reducedFileSurvey.0716.csv", sep = ",", header = TRUE, as.is = TRUE)
-# INFO <- read.table("output/reducedFileList.0716.csv", sep = ",", as.is = TRUE, header = TRUE)
-OUT   <- read.table("output/reducedFileSurvey.102514.csv", sep = ",", header = TRUE, as.is = TRUE)
-INFO <- read.table("output/reducedFileList.102514.csv", sep = ",", as.is = TRUE, header = TRUE)
+OUT   <- read.table("output/reducedFileSurvey_2016-09-27.csv", sep = ",", header = TRUE, as.is = TRUE)
+INFO <- read.table("output/reducedFileList_2016-09-27.csv", sep = ",", as.is = TRUE, header = TRUE)
 
-### sheets not processed
+
+## Several sheets are not processed, for various reasons.
 
 OUT$skip   <- NA ## comments on scripts not processed
 OUT$script <-NA ## identify the script used for each file
@@ -72,8 +89,7 @@ OUT$processed[id2| id4] <- TRUE
 # OUT$skip[id] <- "jade0424 files"
 # OUT$processed[id] <- TRUE
 
-
-### empty sheets
+## Skip empty sheets
 id <- OUT$nrow == 0
 OUT$skip[id] <- "empty"
 OUT$processed[id] <- TRUE
@@ -112,79 +128,95 @@ OUT$processed[id] <- TRUE
 OUT$script[OUT$processed] <- "Not Processed"
 
 
-## source 
-## contains wq data
+## Source each script for different chunks of data.
+## jade042414/ directory
 source("rscripts/readJade.R") # Missing data - look into it
 print(sum(OUT$processed))
 
+## jade0623/ directory
 source("rscripts/readJade0623.R")
 print(sum(OUT$processed))
 
+## Drew data / g /
 source("rscripts/readDirG.R")
 print(sum(OUT$processed))
 
-## contains wq data
+## Drew data / k /
 source("rscripts/readDirK.R")
 print(sum(OUT$processed))
 
-### contains wq data.
+## Drew data / q / 
+## All water quality data
 source("rscripts/readDirQ.R")
 print(sum(OUT$processed))
 
-### no wq
+## Read DASLER files
 source("rscripts/readDASLER.R")
 print(sum(OUT$processed))
 
-## no wq
+## Files with 'Cyano' in the name
 source("rscripts/readCyano.R")
 print(sum(OUT$processed))
 
-## just water quality data
- source("rscripts/readEFRWQ.R")
- print(sum(OUT$processed))
+## Just water quality data
+source("rscripts/readEFRWQ.R")
+print(sum(OUT$processed))
 
-## no water quality
+## Sheets with 'Algal'
 source("rscripts/readAlgal.R")
 print(sum(OUT$processed))
 
-### originally not written to file or saved.
+## Sheets with 'EDD' in them - water quality data.
+## Not read in.
 source("rscripts/readEDD.R")
 print(sum(OUT$processed))
 
-### no wq
+### Mostly Drew data / l /
 source("rscripts/readDirL.R")
 print(sum(OUT$processed))
 
-## no wq
+## Read 'Files with complications / 92Rawdat.xlsx'
 source("rscripts/readRawData.R")
 print(sum(OUT$processed))
 
-## no wq
+## Reads sheets with 'Phytoplankton' in the name
 source("rscripts/readSample.R")
 print(sum(OUT$processed))
 
-### just algae
+### EFR data
 source("rscripts/readEFR.R")
 print(sum(OUT$processed))
 
-### all algae
+### Three different keywords in sheet names - all algae
 source("rscripts/readMisc.R")
 print(sum(OUT$processed))
 
-## algae
+## Two DBF files in Drew data / a
 source("rscripts/readDBF.R")
 print(sum(OUT$processed))
 
+## HAB files
 source("rscripts/readHAB.R")
 print(sum(OUT$processed))
 
-
-source("rscripts/readRemain.R")
+## Old script that reads lots of water quality data
+## None of it is read now.
+source("rscripts/readRemaining.R")
 print(sum(OUT$processed))
 
+## Read CTL files
 source("rscripts/readCTL.R")
 print(sum(OUT$processed))
 
+## Read 2014 / 2014 / 1988 files
+source("rscripts/readNewPhyto.R")
+print(sum(OUT$processed))
+
+## Read the Thomason DASLER files
+source("rscripts/readThomasonDASLER.R")
+print(sum(OUT$processed))
+
+## Make sure no files remain
 xxx <- subset(OUT, ! processed)
 View(xxx)
 
@@ -197,13 +229,5 @@ cmd <- paste('cp processed_data/algae.csv', xx )
 system( cmd)
 
 
-## Process water quality further.
-## Water quality: merge the 'all' object from readRemain.R with the existing
-## wq file.
-source("rscripts/reformatWQ.R")
-## The above script writes the 'combined' water quality file.
-
-
-## Next, run algaeCheck.R and wqCheck.R
-## algaeCheck.R writes the 'clean' algae file, and 
-## wqCheck.R writes the 'clean' water quality file
+## Next, run algaeCheck.R , which writes the 'clean' algae file
+source("cleanAlgaeFile.R")
