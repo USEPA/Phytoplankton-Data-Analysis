@@ -1,48 +1,49 @@
-### check 0307
-### Read EFF Phyto.
+################
+#### Will Barnett, August 2016
+################
 
-setwd("originalData/algae/EFR Phytoplankton Data/")
 
+################
+#### This script is called from masterScript.R, and reads in the data
+#### with EFR in the file name
+################
+
+
+## Change working directory
+datDir <- "originalData/algae/EFR Phytoplankton Data/"
+setwd(datDir)
+
+
+## Subset the files
 id <- grepl("^EFR", OUT$file, ignore.case=FALSE) & OUT$ncol == 9
-
-### files to explicitly skip first go around.
-
-OUTsub2 <- OUT[id  & !OUT$processed, ]
-
+id2 <- grepl("1988DataFiles", OUT$full_file_name)
+OUTsub2 <- OUT[id  & !(OUT$processed | id2), ]
 OUT$processed[id  & !OUT$processed ] <- TRUE
 OUT$script[id  & !OUT$processed ] <- "readEFR.R"
 
-shortList <- OUTsub2
-#######
 
-dimCheck <- 1
-dimCheck <- nrow(AAA)
+## Read the data
+for( i in 1:nrow(OUTsub2)){ # i = 1
+  err <- try( excel_sheets(OUTsub2$full_file_name[i]) )
+  if(class(err) == "try-error"){ print("Error")}else {
+    wb <- OUTsub2$full_file_name[i]
+    temp <- read_excel(wb, sheet=OUTsub2$sheet[i], col_names = TRUE)
+    temp$sheet_id <- OUTsub2$sheet_id[i]
+    if(i == 1){ AAA <- temp}else{
+      AAA <- rbind(AAA, temp)
+    }
+  } # end else
+} # end for
 
-### lesson learned today.  You can't merge a NULL to a data.frame and get anything returned.
-print(dimCheck)
-for( i in 1:nrow(OUTsub2)){
 
-  xlcFreeMemory()
-  err <-    try( wb     <- loadWorkbook(OUTsub2$full_file_name[i]) )
-  if(class(err) == "try-error"){ print("Error")}  
-  temp <- readWorksheet(wb, sheet=OUTsub2$sheet[i], header=TRUE)
-  temp$iCheck <- i
-  #print(dim(temp))
-  
-  dimCheck <- dimCheck + nrow(temp)
-  temp$sheet_id <- OUTsub2$sheet_id[i]
-  if(i == 1){ AAA <- temp}else{
-  AAA <- merge(temp,AAA,  all.x = TRUE, all.y = TRUE )
-  }
-}
-
-date <- paste("19", AAA$Date..yymmdd., sep = "")
-depth <- formatC(AAA$Depth.ft, flag = "0", width = 3)
-
+## A few changes
+date <- paste("19", AAA$`Date (yymmdd)`, sep = "")
+depth <- formatC(AAA$`Depth-ft`, flag = "0", width = 3)
 ID <- paste(AAA$Station, date, "9999", depth, sep = "")
 
 AAA <- AAA[nchar(ID) == 24, ]
 ID <- ID[nchar(ID) == 24]
+
 
 algae <- data.frame(ID = ID,
                     lake = substr(ID, 2,4),
@@ -50,16 +51,16 @@ algae <- data.frame(ID = ID,
                     depth_ft = substr(ID, 22, 24),
                     date = substr(ID, start=10, stop=17),
                     taxa = AAA$Species,
-                    cell_per_l = AAA$Cells.ml * 1000, ### convert to liters.
-                    BV.um3.L = -9999,  ## how can I be certain about these units?
-                    class = NA,
+                    cell_per_l = AAA$`Cells/ml` * 1000, ### convert to liters.
+                    BV.um3.L = NA,  ## how can I be certain about these units?
+                    class = AAA$Group,
                     hab = FALSE,
                     sheet_id = AAA$sheet_id)
 chunck_check(algae)
 setwd(homeDir)
 
 if(WRITE){
-  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = "\t", append= TRUE, col.names = FALSE)          
+  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)
   
 }
 

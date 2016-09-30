@@ -1,32 +1,31 @@
-## read dbf files in Drew/a
+################
+#### Will Barnett, August 2016
+################
+
+
+################
+#### This script is called from masterScript.R, and reads in dbf files
+#### from Drew data / a
+################
+
+
+## Change working directory
+datDir <- "originalData/algae/EFR Phytoplankton Data/"
+setwd(datDir)
+
+
+## Read dbf files in Drew/a
+## Note - dbf files not currently on master list.
 library(foreign)
- 
-  
-  ###check 0307
-
-setwd("originalData/algae/EFR Phytoplankton Data/")
-
-
 file <- "Drew data/a/93Algae.dbf"
-
-## note - dbf files not currently on master list.
-# OUTsub2 <- OUT[id  & !OUT$processed, ]
-# OUT$processed[OUT$full_file_name %in% OUTsub2$full_file_name] <- TRUE
-# OUT$script[OUT$full_file_name %in% OUTsub2$full_file_name] <- "readDBF.R"
-
-
-
 dat <- read.dbf(file, as.is=TRUE)
-
 datTemp <- strptime(dat$DATE, format = "%m/%d/%y")
 datTemp <- format(datTemp, "%Y%m%d")
-
 datDepth <- formatC(as.numeric(dat$DEPTH), flag = "0", width 
                     = 3, digits=3)
-
 ID <- paste(dat$STATION, datTemp, "9999", datDepth, sep = "")
 
-algae <- data.frame(ID = ID,
+algae1 <- data.frame(ID = ID,
                     lake = substr(ID, 2,4),
                     station = substr(ID, 5, 9),
                     depth_ft = dat$DEPTH,
@@ -36,21 +35,17 @@ algae <- data.frame(ID = ID,
                     BV.um3.L = dat$TOTBV,  
                     class = NA,
                     hab = FALSE,
-                    sheet_id = 999)
+                    sheet_id = NA)
 
+
+## Second DBF
 file <- "Drew data/a/ALGAE-95.dbf"
-
 dat <- read.dbf(file, as.is=TRUE)
-
-
 datTemp <- format(dat$DATE, "%Y%m%d")
-
 datDepth <- gsub(pattern="'", "",dat$DEPTH)
 datDepth <- gsub(pattern="0-", "",datDepth)
-
 datDepth <- formatC(as.numeric(datDepth), flag = "0", width 
                     = 3, digits=3)
-
 
 ID <- paste("2", dat$LAKE, dat$STATION, datTemp, "9999", datDepth, sep = "")
 
@@ -64,22 +59,21 @@ algae2 <- data.frame(ID = ID,
                     BV.um3.L = dat$BV_L,  
                     class = NA,
                     hab = FALSE,
-                    sheet_id = -999)
+                    sheet_id = NA)
 
-all <- rbind(algae, algae2)
+algae <- rbind(algae1, algae2)
 
-all$taxa <- gsub(pattern="'","", all$taxa)
-all$taxa <- gsub(pattern='"',"", all$taxa)
+algae$taxa <- gsub(pattern="'","", algae$taxa)
+algae$taxa <- gsub(pattern='"',"", algae$taxa)
 
-all$lake <- gsub("grr", "GRR", all$lake)
-all$ID <- gsub("grr", "GRR", all$ID)
+algae$lake <- gsub("grr", "GRR", algae$lake)
+algae$ID <- gsub("grr", "GRR", algae$ID)
 
-chunck_check(all)
+chunck_check(algae)
 
 setwd(homeDir)
 
 if(WRITE){
-  write.table(all, "processed_data/algae.csv", row.names=FALSE, sep = "\t", append= TRUE, col.names = FALSE)          
-  
+  write.table(algae, "processed_data/algae.csv", row.names=FALSE, sep = ",", append= TRUE, col.names = FALSE)          
 }
 
